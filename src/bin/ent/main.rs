@@ -1,0 +1,77 @@
+use clap::Parser;
+
+#[derive(Debug, clap::Parser)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Directory containing issues.
+    #[arg(short = 'd', long)]
+    issues_dir: Option<String>,
+
+    /// Branch containing issues.
+    #[arg(short = 'b', long)]
+    issues_branch: Option<String>,
+
+    /// Type of behavior/output.
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(clap::Subcommand, Debug)]
+enum Commands {
+    /// List issues.
+    List,
+
+    /// Create a new issue.
+    New {
+        title: Option<String>,
+        description: Option<String>,
+    },
+}
+
+fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<()> {
+    match &args.command {
+        Commands::List => {
+            let issues =
+                entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
+            for (uuid, issue) in issues.issues.iter() {
+                println!("{} {} ({:?})", uuid, issue.title, issue.state);
+            }
+        }
+        Commands::New { title, description } => {
+            println!(
+                "should make a new issue, title={:?}, description={:?}",
+                title, description
+            );
+        }
+    }
+
+    Ok(())
+}
+
+fn main() -> anyhow::Result<()> {
+    let args: Args = Args::parse();
+    // println!("{:?}", args);
+
+    if let (Some(_), Some(_)) = (&args.issues_dir, &args.issues_branch) {
+        return Err(anyhow::anyhow!(
+            "don't specify both `--issues-dir` and `--issues-branch`"
+        ));
+    }
+
+    if let Some(dir) = &args.issues_dir {
+        let dir = std::path::Path::new(dir);
+        handle_command(&args, dir)?;
+    } else {
+        let branch = match &args.issues_branch {
+            Some(branch) => branch,
+            None => "entomologist-data",
+        };
+        if !entomologist::git::git_branch_exists(branch)? {
+            entomologist::git::create_orphan_branch(branch)?;
+        }
+        let worktree = entomologist::git::Worktree::new(branch)?;
+        handle_command(&args, worktree.path())?;
+    }
+
+    Ok(())
+}
