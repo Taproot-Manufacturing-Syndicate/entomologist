@@ -1,0 +1,109 @@
+use std::str::FromStr;
+
+#[derive(Debug, PartialEq, serde::Deserialize)]
+/// These are the states an issue can be in.
+pub enum State {
+    New,
+    Backlog,
+    InProgress,
+    Done,
+    WontDo,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Issue {
+    pub title: String,
+    pub description: Option<String>,
+    pub state: State,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ReadIssueError {
+    #[error(transparent)]
+    StdIoError(#[from] std::io::Error),
+    #[error("Failed to parse issue")]
+    IssueParseError,
+}
+
+impl FromStr for State {
+    type Err = ReadIssueError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.to_lowercase();
+        if s == "new" {
+            Ok(State::New)
+        } else if s == "backlog" {
+            Ok(State::Backlog)
+        } else if s == "inprogress" {
+            Ok(State::InProgress)
+        } else if s == "done" {
+            Ok(State::Done)
+        } else if s == "wontdo" {
+            Ok(State::WontDo)
+        } else {
+            Err(ReadIssueError::IssueParseError)
+        }
+    }
+}
+
+impl Issue {
+    pub fn new_from_dir(dir: &std::path::Path) -> Result<Self, ReadIssueError> {
+        let mut title: Option<String> = None;
+        let mut description: Option<String> = None;
+        let mut state = State::New; // default state, if not specified in the issue
+
+        for direntry in dir.read_dir()? {
+            if let Ok(direntry) = direntry {
+                let file_name = direntry.file_name();
+                if file_name == "title" {
+                    title = Some(std::fs::read_to_string(direntry.path())?.trim().into());
+                } else if file_name == "description" {
+                    description = Some(std::fs::read_to_string(direntry.path())?);
+                } else if file_name == "state" {
+                    let state_string = std::fs::read_to_string(direntry.path())?;
+                    state = State::from_str(state_string.trim())?;
+                } else {
+                    println!("ignoring unknown file in issue directory: {:?}", file_name);
+                }
+            }
+        }
+
+        if title == None {
+            return Err(ReadIssueError::IssueParseError);
+        }
+
+        Ok(Self {
+            title: title.unwrap(),
+            description: description,
+            state: state,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn read_issue_0() {
+        let issue_dir = std::path::Path::new("test/0000/3943fc5c173fdf41c0a22251593cd476d96e6c9f/");
+        let issue = Issue::new_from_dir(issue_dir).unwrap();
+        let expected = Issue {
+            title: String::from("this is the title of my issue"),
+            description: Some(String::from("This is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n")),
+            state: State::New,
+        };
+        assert_eq!(issue, expected);
+    }
+
+    #[test]
+    fn read_issue_1() {
+        let issue_dir = std::path::Path::new("test/0000/7792b063eef6d33e7da5dc1856750c149ba678c6/");
+        let issue = Issue::new_from_dir(issue_dir).unwrap();
+        let expected = Issue {
+            title: String::from("minimal"),
+            description: None,
+            state: State::InProgress,
+        };
+        assert_eq!(issue, expected);
+    }
+}
