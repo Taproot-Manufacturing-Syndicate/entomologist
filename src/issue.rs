@@ -5,16 +5,20 @@ use std::str::FromStr;
 pub enum State {
     New,
     Backlog,
+    Blocked,
     InProgress,
     Done,
     WontDo,
 }
+
+pub type IssueHandle = String;
 
 #[derive(Debug, PartialEq)]
 pub struct Issue {
     pub title: String,
     pub description: Option<String>,
     pub state: State,
+    pub dependencies: Option<Vec<IssueHandle>>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -33,6 +37,8 @@ impl FromStr for State {
             Ok(State::New)
         } else if s == "backlog" {
             Ok(State::Backlog)
+        } else if s == "blocked" {
+            Ok(State::Blocked)
         } else if s == "inprogress" {
             Ok(State::InProgress)
         } else if s == "done" {
@@ -50,6 +56,7 @@ impl Issue {
         let mut title: Option<String> = None;
         let mut description: Option<String> = None;
         let mut state = State::New; // default state, if not specified in the issue
+        let mut dependencies: Option<Vec<String>> = None;
 
         for direntry in dir.read_dir()? {
             if let Ok(direntry) = direntry {
@@ -60,7 +67,13 @@ impl Issue {
                     description = Some(std::fs::read_to_string(direntry.path())?);
                 } else if file_name == "state" {
                     let state_string = std::fs::read_to_string(direntry.path())?;
-                    state = State::from_str(state_string.trim())?;
+                    state = State::from_str(state_string.trim())?; 
+                } else if file_name == "dependencies" {
+                    let dep_strings = std::fs::read_to_string(direntry.path())?;
+                    let deps: Vec<IssueHandle> = dep_strings.lines().map(|dep|{IssueHandle::from(dep)}).collect();
+                    if deps.len() > 0 {
+                        dependencies = Some(deps);
+                    }
                 } else {
                     println!("ignoring unknown file in issue directory: {:?}", file_name);
                 }
@@ -75,6 +88,7 @@ impl Issue {
             title: title.unwrap(),
             description: description,
             state: state,
+            dependencies,
         })
     }
 }
@@ -91,6 +105,7 @@ mod tests {
             title: String::from("this is the title of my issue"),
             description: Some(String::from("This is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n")),
             state: State::New,
+            dependencies: None,
         };
         assert_eq!(issue, expected);
     }
@@ -103,6 +118,7 @@ mod tests {
             title: String::from("minimal"),
             description: None,
             state: State::InProgress,
+            dependencies: None,
         };
         assert_eq!(issue, expected);
     }

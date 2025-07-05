@@ -83,6 +83,7 @@ mod tests {
                 title: String::from("minimal"),
                 description: None,
                 state: crate::issue::State::InProgress,
+                dependencies: None,
             },
         );
         expected.add_issue(
@@ -91,6 +92,7 @@ mod tests {
                 title: String::from("this is the title of my issue"),
                 description: Some(String::from("This is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n")),
                 state: crate::issue::State::New,
+                dependencies: None,
             }
         );
         assert_eq!(issues, expected);
@@ -108,6 +110,7 @@ mod tests {
                 title: String::from("oh yeah we got titles"),
                 description: None,
                 state: crate::issue::State::Done,
+                dependencies: None,
             },
         );
         expected.add_issue(
@@ -118,8 +121,50 @@ mod tests {
                     "Lots of words\nthat don't say much\nbecause this is just\na test\n",
                 )),
                 state: crate::issue::State::WontDo,
+                dependencies: None,
+            },
+        );
+        assert_eq!(issues, expected);
+    }
+
+    #[test]
+    fn read_issues_0002() {
+        let issues_dir = std::path::Path::new("test/0002/");
+        let issues = Issues::new_from_dir(issues_dir).unwrap();
+
+        let mut expected = Issues::new();
+        expected.add_issue(
+            String::from("3fa5bfd93317ad25772680071d5ac3259cd2384f"),
+            crate::issue::Issue {
+                title: String::from("oh yeah we got titles"),
+                description: None,
+                state: crate::issue::State::Done,
+                dependencies: None,
+            },
+        );
+        expected.add_issue(
+            String::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561"),
+            crate::issue::Issue {
+                title: String::from("issues out the wazoo"),
+                description: Some(String::from(
+                    "Lots of words\nthat don't say much\nbecause this is just\na test\n",
+                )),
+                state: crate::issue::State::WontDo,
+                dependencies: None,
+            },
+        );
+        expected.add_issue(
+            String::from("a85f81fc5f14cb5d4851dd445dc9744c7f16ccc7"),
+            crate::issue::Issue {
+                title: String::from("issue with dependencies"),
+                description: Some(String::from(
+                    "a test has begun\nfor dependencies we seek\nintertwining life",
+                )),
+                state: crate::issue::State::WontDo,
+                dependencies: Some(vec![crate::issue::IssueHandle::from("3fa5bfd93317ad25772680071d5ac3259cd2384f"), crate::issue::IssueHandle::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561")]),
             },
         );
         assert_eq!(issues, expected);
     }
 }
+
