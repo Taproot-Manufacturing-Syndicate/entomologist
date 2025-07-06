@@ -34,7 +34,7 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             let issues =
                 entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
             for (uuid, issue) in issues.issues.iter() {
-                println!("{} {} ({:?})", uuid, issue.title, issue.state);
+                println!("{} {} ({:?})", uuid, issue.title(), issue.state);
             }
         }
         Commands::New { title, description } => {
