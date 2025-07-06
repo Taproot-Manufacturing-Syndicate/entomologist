@@ -77,20 +77,30 @@ mod tests {
         let issues = Issues::new_from_dir(issues_dir).unwrap();
 
         let mut expected = Issues::new();
+
+        let uuid = String::from("7792b063eef6d33e7da5dc1856750c149ba678c6");
+        let mut dir = std::path::PathBuf::from(issues_dir);
+        dir.push(&uuid);
         expected.add_issue(
-            String::from("7792b063eef6d33e7da5dc1856750c149ba678c6"),
+            uuid,
             crate::issue::Issue {
                 description: String::from("minimal"),
                 state: crate::issue::State::InProgress,
                 dependencies: None,
+                dir,
             },
         );
+
+        let uuid = String::from("3943fc5c173fdf41c0a22251593cd476d96e6c9f");
+        let mut dir = std::path::PathBuf::from(issues_dir);
+        dir.push(&uuid);
         expected.add_issue(
-            String::from("3943fc5c173fdf41c0a22251593cd476d96e6c9f"),
+            uuid,
             crate::issue::Issue {
                 description: String::from("this is the title of my issue\n\nThis is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n"),
                 state: crate::issue::State::New,
                 dependencies: None,
+                dir,
             }
         );
         assert_eq!(issues, expected);
@@ -102,20 +112,30 @@ mod tests {
         let issues = Issues::new_from_dir(issues_dir).unwrap();
 
         let mut expected = Issues::new();
+
+        let uuid = String::from("3fa5bfd93317ad25772680071d5ac3259cd2384f");
+        let mut dir = std::path::PathBuf::from(issues_dir);
+        dir.push(&uuid);
         expected.add_issue(
-            String::from("3fa5bfd93317ad25772680071d5ac3259cd2384f"),
+            uuid,
             crate::issue::Issue {
                 description: String::from("oh yeah we got titles"),
                 state: crate::issue::State::Done,
                 dependencies: None,
+                dir,
             },
         );
+
+        let uuid = String::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561");
+        let mut dir = std::path::PathBuf::from(issues_dir);
+        dir.push(&uuid);
         expected.add_issue(
-            String::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561"),
+            uuid,
             crate::issue::Issue {
                 description: String::from("issues out the wazoo\n\nLots of words\nthat don't say much\nbecause this is just\na test\n"),
                 state: crate::issue::State::WontDo,
                 dependencies: None,
+                dir,
             },
         );
         assert_eq!(issues, expected);
@@ -127,24 +147,38 @@ mod tests {
         let issues = Issues::new_from_dir(issues_dir).unwrap();
 
         let mut expected = Issues::new();
+
+        let uuid = String::from("3fa5bfd93317ad25772680071d5ac3259cd2384f");
+        let mut dir = std::path::PathBuf::from(issues_dir);
+        dir.push(&uuid);
         expected.add_issue(
-            String::from("3fa5bfd93317ad25772680071d5ac3259cd2384f"),
+            uuid,
             crate::issue::Issue {
                 description: String::from("oh yeah we got titles\n"),
                 state: crate::issue::State::Done,
                 dependencies: None,
+                dir,
             },
         );
+
+        let uuid = String::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561");
+        let mut dir = std::path::PathBuf::from(issues_dir);
+        dir.push(&uuid);
         expected.add_issue(
-            String::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561"),
+            uuid,
             crate::issue::Issue {
                 description: String::from("issues out the wazoo\n\nLots of words\nthat don't say much\nbecause this is just\na test\n"),
                 state: crate::issue::State::WontDo,
                 dependencies: None,
+                dir,
             },
         );
+
+        let uuid = String::from("a85f81fc5f14cb5d4851dd445dc9744c7f16ccc7");
+        let mut dir = std::path::PathBuf::from(issues_dir);
+        dir.push(&uuid);
         expected.add_issue(
-            String::from("a85f81fc5f14cb5d4851dd445dc9744c7f16ccc7"),
+            uuid,
             crate::issue::Issue {
                 description: String::from("issue with dependencies\n\na test has begun\nfor dependencies we seek\nintertwining life"),
                 state: crate::issue::State::WontDo,
@@ -152,6 +186,7 @@ mod tests {
                     crate::issue::IssueHandle::from("3fa5bfd93317ad25772680071d5ac3259cd2384f"),
                     crate::issue::IssueHandle::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561"),
                 ]),
+                dir,
             },
         );
         assert_eq!(issues, expected);

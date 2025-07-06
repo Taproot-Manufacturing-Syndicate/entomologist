@@ -18,6 +18,10 @@ pub struct Issue {
     pub description: String,
     pub state: State,
     pub dependencies: Option<Vec<IssueHandle>>,
+
+    /// This is the directory that the issue lives in.  Only used
+    /// internally by the entomologist library.
+    pub dir: std::path::PathBuf,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -87,6 +91,7 @@ impl Issue {
             description: description.unwrap(),
             state: state,
             dependencies,
+            dir: std::path::PathBuf::from(dir),
         })
     }
 
@@ -110,6 +115,7 @@ mod tests {
             description: String::from("this is the title of my issue\n\nThis is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n"),
             state: State::New,
             dependencies: None,
+            dir: std::path::PathBuf::from(issue_dir),
         };
         assert_eq!(issue, expected);
     }
@@ -122,6 +128,7 @@ mod tests {
             description: String::from("minimal"),
             state: State::InProgress,
             dependencies: None,
+            dir: std::path::PathBuf::from(issue_dir),
         };
         assert_eq!(issue, expected);
     }
