@@ -15,8 +15,7 @@ pub type IssueHandle = String;
 
 #[derive(Debug, PartialEq)]
 pub struct Issue {
-    pub title: String,
-    pub description: Option<String>,
+    pub description: String,
     pub state: State,
     pub dependencies: Option<Vec<IssueHandle>>,
 }
@@ -53,7 +52,6 @@ impl FromStr for State {
 
 impl Issue {
     pub fn new_from_dir(dir: &std::path::Path) -> Result<Self, ReadIssueError> {
-        let mut title: Option<String> = None;
         let mut description: Option<String> = None;
         let mut state = State::New; // default state, if not specified in the issue
         let mut dependencies: Option<Vec<String>> = None;
@@ -61,16 +59,17 @@ impl Issue {
         for direntry in dir.read_dir()? {
             if let Ok(direntry) = direntry {
                 let file_name = direntry.file_name();
-                if file_name == "title" {
-                    title = Some(std::fs::read_to_string(direntry.path())?.trim().into());
-                } else if file_name == "description" {
+                if file_name == "description" {
                     description = Some(std::fs::read_to_string(direntry.path())?);
                 } else if file_name == "state" {
                     let state_string = std::fs::read_to_string(direntry.path())?;
-                    state = State::from_str(state_string.trim())?; 
+                    state = State::from_str(state_string.trim())?;
                 } else if file_name == "dependencies" {
                     let dep_strings = std::fs::read_to_string(direntry.path())?;
-                    let deps: Vec<IssueHandle> = dep_strings.lines().map(|dep|{IssueHandle::from(dep)}).collect();
+                    let deps: Vec<IssueHandle> = dep_strings
+                        .lines()
+                        .map(|dep| IssueHandle::from(dep))
+                        .collect();
                     if deps.len() > 0 {
                         dependencies = Some(deps);
                     }
@@ -80,16 +79,22 @@ impl Issue {
             }
         }
 
-        if title == None {
+        if description == None {
             return Err(ReadIssueError::IssueParseError);
         }
 
         Ok(Self {
-            title: title.unwrap(),
-            description: description,
+            description: description.unwrap(),
             state: state,
             dependencies,
         })
+    }
+
+    pub fn title<'a>(&'a self) -> &'a str {
+        match self.description.find("\n") {
+            Some(index) => &self.description.as_str()[..index],
+            None => self.description.as_str(),
+        }
     }
 }
 
@@ -102,8 +107,7 @@ mod tests {
         let issue_dir = std::path::Path::new("test/0000/3943fc5c173fdf41c0a22251593cd476d96e6c9f/");
         let issue = Issue::new_from_dir(issue_dir).unwrap();
         let expected = Issue {
-            title: String::from("this is the title of my issue"),
-            description: Some(String::from("This is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n")),
+            description: String::from("this is the title of my issue\n\nThis is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n"),
             state: State::New,
             dependencies: None,
         };
@@ -115,8 +119,7 @@ mod tests {
         let issue_dir = std::path::Path::new("test/0000/7792b063eef6d33e7da5dc1856750c149ba678c6/");
         let issue = Issue::new_from_dir(issue_dir).unwrap();
         let expected = Issue {
-            title: String::from("minimal"),
-            description: None,
+            description: String::from("minimal"),
             state: State::InProgress,
             dependencies: None,
         };
