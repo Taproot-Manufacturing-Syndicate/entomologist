@@ -23,6 +23,9 @@ enum Commands {
 
     /// Create a new issue.
     New { description: Option<String> },
+
+    /// Edit the description of an issue.
+    Edit { issue_id: String },
 }
 
 fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<()> {
@@ -45,6 +48,18 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             let mut issue = entomologist::issue::Issue::new(issues_dir)?;
             issue.edit_description()?;
             println!("created new issue '{}'", issue.title());
+        }
+        Commands::Edit { issue_id } => {
+            let mut issues =
+                entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
+            match issues.issues.get_mut(issue_id) {
+                Some(issue) => {
+                    issue.edit_description()?;
+                }
+                None => {
+                    println!("issue {} not found", issue_id);
+                }
+            }
         }
     }
 
