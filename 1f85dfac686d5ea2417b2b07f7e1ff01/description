@@ -1,0 +1,4 @@
+# implement `ent attach ${ISSUE} ${FILE}`
+
+- each issue has its own independent namespace for attached files
+- issue description & comments can reference attached files via standard md links
