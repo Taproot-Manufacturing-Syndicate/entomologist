@@ -22,10 +22,7 @@ enum Commands {
     List,
 
     /// Create a new issue.
-    New {
-        title: Option<String>,
-        description: Option<String>,
-    },
+    New { description: Option<String> },
 }
 
 fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<()> {
@@ -37,11 +34,17 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                 println!("{} {} ({:?})", uuid, issue.title(), issue.state);
             }
         }
-        Commands::New { title, description } => {
-            println!(
-                "should make a new issue, title={:?}, description={:?}",
-                title, description
-            );
+        Commands::New {
+            description: Some(description),
+        } => {
+            let mut issue = entomologist::issue::Issue::new(issues_dir)?;
+            issue.set_description(description)?;
+            println!("created new issue '{}'", issue.title());
+        }
+        Commands::New { description: None } => {
+            let mut issue = entomologist::issue::Issue::new(issues_dir)?;
+            issue.edit_description()?;
+            println!("created new issue '{}'", issue.title());
         }
     }
 

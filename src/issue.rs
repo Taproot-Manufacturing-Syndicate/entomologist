@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, serde::Deserialize)]
@@ -30,6 +31,10 @@ pub enum IssueError {
     StdIoError(#[from] std::io::Error),
     #[error("Failed to parse issue")]
     IssueParseError,
+    #[error("Failed to run git")]
+    GitError(#[from] crate::git::GitError),
+    #[error("Failed to run editor")]
+    EditorError,
 }
 
 impl FromStr for State {
@@ -93,6 +98,53 @@ impl Issue {
             dependencies,
             dir: std::path::PathBuf::from(dir),
         })
+    }
+
+    pub fn new(dir: &std::path::Path) -> Result<Self, IssueError> {
+        let mut issue_dir = std::path::PathBuf::from(dir);
+        let rnd: u128 = rand::random();
+        issue_dir.push(&format!("{:0x}", rnd));
+        std::fs::create_dir(&issue_dir)?;
+        Ok(Self {
+            description: String::from(""), // FIXME: kind of bogus to use the empty string as None
+            state: State::New,
+            dependencies: None,
+            dir: issue_dir,
+        })
+    }
+
+    pub fn set_description(&mut self, description: &str) -> Result<(), IssueError> {
+        self.description = String::from(description);
+        let mut description_filename = std::path::PathBuf::from(&self.dir);
+        description_filename.push("description");
+        let mut description_file = std::fs::File::create(&description_filename)?;
+        write!(description_file, "{}", description)?;
+        crate::git::git_commit_file(&description_filename)?;
+        Ok(())
+    }
+
+    pub fn read_description(&mut self) -> Result<(), IssueError> {
+        let mut description_filename = std::path::PathBuf::from(&self.dir);
+        description_filename.push("description");
+        self.description = std::fs::read_to_string(description_filename)?;
+        Ok(())
+    }
+
+    pub fn edit_description(&mut self) -> Result<(), IssueError> {
+        let mut description_filename = std::path::PathBuf::from(&self.dir);
+        description_filename.push("description");
+        let result = std::process::Command::new("vi")
+            .arg(&description_filename.as_mut_os_str())
+            .spawn()?
+            .wait_with_output()?;
+        if !result.status.success() {
+            println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+            println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+            return Err(IssueError::EditorError);
+        }
+        crate::git::git_commit_file(&description_filename)?;
+        self.read_description()?;
+        Ok(())
     }
 
     pub fn title<'a>(&'a self) -> &'a str {
