@@ -12,8 +12,8 @@ pub struct Issues {
 pub enum ReadIssuesError {
     #[error(transparent)]
     StdIoError(#[from] std::io::Error),
-    #[error("Failed to parse issue")]
-    IssueParseError(#[from] crate::issue::ReadIssueError),
+    #[error(transparent)]
+    IssueError(#[from] crate::issue::IssueError),
     #[error("cannot handle filename")]
     FilenameError(std::ffi::OsString),
     #[error(transparent)]

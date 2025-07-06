@@ -25,7 +25,7 @@ pub struct Issue {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum ReadIssueError {
+pub enum IssueError {
     #[error(transparent)]
     StdIoError(#[from] std::io::Error),
     #[error("Failed to parse issue")]
@@ -33,7 +33,7 @@ pub enum ReadIssueError {
 }
 
 impl FromStr for State {
-    type Err = ReadIssueError;
+    type Err = IssueError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.to_lowercase();
         if s == "new" {
@@ -49,13 +49,13 @@ impl FromStr for State {
         } else if s == "wontdo" {
             Ok(State::WontDo)
         } else {
-            Err(ReadIssueError::IssueParseError)
+            Err(IssueError::IssueParseError)
         }
     }
 }
 
 impl Issue {
-    pub fn new_from_dir(dir: &std::path::Path) -> Result<Self, ReadIssueError> {
+    pub fn new_from_dir(dir: &std::path::Path) -> Result<Self, IssueError> {
         let mut description: Option<String> = None;
         let mut state = State::New; // default state, if not specified in the issue
         let mut dependencies: Option<Vec<String>> = None;
@@ -84,7 +84,7 @@ impl Issue {
         }
 
         if description == None {
-            return Err(ReadIssueError::IssueParseError);
+            return Err(IssueError::IssueParseError);
         }
 
         Ok(Self {
