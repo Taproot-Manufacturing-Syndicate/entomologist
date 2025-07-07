@@ -1,5 +1,8 @@
 use std::str::FromStr;
 
+#[cfg(feature = "log")]
+use log::debug;
+
 #[derive(Debug, PartialEq, serde::Deserialize)]
 /// These are the states an issue can be in.
 pub enum State {
@@ -74,7 +77,8 @@ impl Issue {
                         dependencies = Some(deps);
                     }
                 } else {
-                    println!("ignoring unknown file in issue directory: {:?}", file_name);
+                    #[cfg(feature = "log")]
+                    debug!("ignoring unknown file in issue directory: {:?}", file_name);
                 }
             }
         }
