@@ -1,4 +1,4 @@
-keep local `entomologist-data` branch in sync with `origin/entomologist-data`
+keep local `entomologist-data` branch in sync with remote
 
 My git workflow does not use `git pull`, instead i:
 1. `git fetch`
