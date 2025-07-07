@@ -89,6 +89,41 @@ pub fn git_branch_exists(branch: &str) -> Result<bool, GitError> {
     return Ok(result.status.success());
 }
 
+pub fn git_commit_file(file: &std::path::Path) -> Result<(), GitError> {
+    let mut git_dir = std::path::PathBuf::from(file);
+    git_dir.pop();
+
+    let result = std::process::Command::new("git")
+        .args(["add", &file.file_name().unwrap().to_string_lossy()])
+        .current_dir(&git_dir)
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+
+    let result = std::process::Command::new("git")
+        .args([
+            "commit",
+            "-m",
+            &format!(
+                "update '{}' in issue {}",
+                file.file_name().unwrap().to_string_lossy(),
+                git_dir.file_name().unwrap().to_string_lossy()
+            ),
+        ])
+        .current_dir(&git_dir)
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+
+    Ok(())
+}
+
 pub fn create_orphan_branch(branch: &str) -> Result<(), GitError> {
     {
         let tmp_worktree = tempfile::tempdir().unwrap();
