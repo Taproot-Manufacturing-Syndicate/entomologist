@@ -1,3 +1,4 @@
+use core::fmt;
 use std::io::Write;
 use std::str::FromStr;
 
@@ -59,6 +60,21 @@ impl FromStr for State {
         } else {
             Err(IssueError::IssueParseError)
         }
+    }
+}
+
+impl fmt::Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let fmt_str = match self {
+            State::New => "new",
+            State::Backlog => "backlog",
+            State::Blocked => "blocked",
+            State::InProgress => "inprogress",
+            State::Done => "done",
+            State::WontDo => "wontdo",
+            
+        };
+        write!(f, "{fmt_str}")
     }
 }
 
