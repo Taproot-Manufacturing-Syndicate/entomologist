@@ -1,0 +1,17 @@
+`ent edit ${ISSUE}` with no change fails
+
+After the user closes the editor, ent blindly tries to commit, which
+fails like this:
+```
+stdout: On branch entomologist-data
+nothing to commit, working tree clean
+
+stderr:
+Error: Failed to run git
+
+Caused by:
+    Oops, something went wrong
+```
+
+Probably we should run `git status` after the editor finishes, to see
+if there's anything to commit.
