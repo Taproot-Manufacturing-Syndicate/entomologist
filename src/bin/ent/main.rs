@@ -90,6 +90,11 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                     }
                     println!("");
                     println!("{}", issue.description);
+                    for (uuid, comment) in issue.comments.iter() {
+                        println!("");
+                        println!("comment: {}", uuid);
+                        println!("{}", comment.description);
+                    }
                 }
                 None => {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
