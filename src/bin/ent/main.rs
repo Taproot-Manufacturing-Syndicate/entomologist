@@ -35,7 +35,10 @@ enum Commands {
     Show { issue_id: String },
 
     /// Modify the state of an issue
-    State { issue_id: String, new_state: Option<State> },
+    State {
+        issue_id: String,
+        new_state: Option<State>,
+    },
 }
 
 fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<()> {
@@ -47,6 +50,7 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                 println!("{} {} ({:?})", uuid, issue.title(), issue.state);
             }
         }
+
         Commands::New {
             description: Some(description),
         } => {
@@ -54,11 +58,13 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             issue.set_description(description)?;
             println!("created new issue '{}'", issue.title());
         }
+
         Commands::New { description: None } => {
             let mut issue = entomologist::issue::Issue::new(issues_dir)?;
             issue.edit_description()?;
             println!("created new issue '{}'", issue.title());
         }
+
         Commands::Edit { issue_id } => {
             let mut issues =
                 entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
@@ -67,10 +73,11 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                     issue.edit_description()?;
                 }
                 None => {
-                    println!("issue {} not found", issue_id);
+                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 }
             }
         }
+
         Commands::Show { issue_id } => {
             let issues =
                 entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
@@ -85,17 +92,20 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                     println!("{}", issue.description);
                 }
                 None => {
-                    println!("issue {} not found", issue_id);
+                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 }
             }
         }
-        Commands::State { issue_id, new_state } => {
+
+        Commands::State {
+            issue_id,
+            new_state,
+        } => {
             let mut issues =
                 entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
             match issues.issues.get_mut(issue_id) {
                 Some(issue) => {
-                   let current_state = issue.state.clone();
-
+                    let current_state = issue.state.clone();
                     match new_state {
                         Some(s) => {
                             issue.set_state(s.clone())?;
@@ -107,10 +117,9 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                             println!("state: {}", current_state);
                         }
                     }
-                   
                 }
                 None => {
-                    println!("issue {} not found", issue_id);
+                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 }
             }
         }
