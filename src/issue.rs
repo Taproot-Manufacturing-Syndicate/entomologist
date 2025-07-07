@@ -4,7 +4,7 @@ use std::str::FromStr;
 #[cfg(feature = "log")]
 use log::debug;
 
-#[derive(Debug, PartialEq, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize)]
 /// These are the states an issue can be in.
 pub enum State {
     New,
@@ -156,6 +156,23 @@ impl Issue {
             Some(index) => &self.description.as_str()[..index],
             None => self.description.as_str(),
         }
+    }
+
+    pub fn set_state(&mut self, new_state: State) -> Result<(), IssueError> {
+        let mut state_filename = std::path::PathBuf::from(&self.dir);
+        state_filename.push("state");
+        let mut state_file = std::fs::File::create(&state_filename)?;
+        write!(state_file, "{}", new_state)?;
+        crate::git::git_commit_file(&state_filename)?;
+        Ok(())
+    }
+
+    pub fn read_state(&mut self) -> Result<(), IssueError> {
+        let mut state_filename = std::path::PathBuf::from(&self.dir);
+        state_filename.push("state");
+        let state_string = std::fs::read_to_string(state_filename)?;
+        self.state = State::from_str(state_string.trim())?;
+        Ok(())
     }
 }
 
