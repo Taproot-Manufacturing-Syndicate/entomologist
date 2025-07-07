@@ -1,5 +1,8 @@
 use clap::Parser;
 
+#[cfg(feature = "log")]
+use simple_logger;
+
 #[derive(Debug, clap::Parser)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -85,6 +88,9 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
 }
 
 fn main() -> anyhow::Result<()> {
+    #[cfg(feature = "log")]
+    simple_logger::SimpleLogger::new().env().init().unwrap();
+
     let args: Args = Args::parse();
     // println!("{:?}", args);
 

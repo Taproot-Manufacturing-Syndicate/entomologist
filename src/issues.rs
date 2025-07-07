@@ -1,3 +1,6 @@
+#[cfg(feature = "log")]
+use log::debug;
+
 // Just a placeholder for now, get rid of this if we don't need it.
 #[derive(Debug, PartialEq, serde::Deserialize)]
 pub struct Config {}
@@ -56,7 +59,8 @@ impl Issues {
                 } else if direntry.file_name() == "config.toml" {
                     issues.parse_config(direntry.path().as_path())?;
                 } else {
-                    println!(
+                    #[cfg(feature = "log")]
+                    debug!(
                         "ignoring unknown file in issues directory: {:?}",
                         direntry.file_name()
                     );
