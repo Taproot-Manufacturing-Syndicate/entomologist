@@ -62,7 +62,7 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
         Commands::Edit { issue_id } => {
             let mut issues =
                 entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
-            match issues.issues.get_mut(issue_id) {
+            match issues.get_mut_issue(issue_id) {
                 Some(issue) => {
                     issue.edit_description()?;
                 }
@@ -74,7 +74,7 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
         Commands::Show { issue_id } => {
             let issues =
                 entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
-            match issues.issues.get(issue_id) {
+            match issues.get_issue(issue_id) {
                 Some(issue) => {
                     println!("issue {}", issue_id);
                     println!("state: {:?}", issue.state);
