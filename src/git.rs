@@ -213,7 +213,7 @@ mod tests {
     fn test_create_orphan_branch() {
         let rnd: u128 = rand::random();
         let mut branch = std::string::String::from("entomologist-test-branch-");
-        branch.push_str(&format!("{:0x}", rnd));
+        branch.push_str(&format!("{:032x}", rnd));
         create_orphan_branch(&branch).unwrap();
         git_remove_branch(&branch).unwrap();
     }
@@ -228,7 +228,7 @@ mod tests {
     fn test_branch_exists_1() {
         let rnd: u128 = rand::random();
         let mut branch = std::string::String::from("entomologist-missing-branch-");
-        branch.push_str(&format!("{:0x}", rnd));
+        branch.push_str(&format!("{:032x}", rnd));
         let r = git_branch_exists(&branch).unwrap();
         assert_eq!(r, false);
     }

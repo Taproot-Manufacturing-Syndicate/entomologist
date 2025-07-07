@@ -107,7 +107,7 @@ impl Issue {
     pub fn new(dir: &std::path::Path) -> Result<Self, IssueError> {
         let mut issue_dir = std::path::PathBuf::from(dir);
         let rnd: u128 = rand::random();
-        issue_dir.push(&format!("{:0x}", rnd));
+        issue_dir.push(&format!("{:032x}", rnd));
         std::fs::create_dir(&issue_dir)?;
         Ok(Self {
             description: String::from(""), // FIXME: kind of bogus to use the empty string as None
