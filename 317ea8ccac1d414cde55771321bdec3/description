@@ -1,0 +1,15 @@
+allow multiple read-only ent processes simultaneously
+
+Currently every time `ent` checks out a worktree of its "issues database",
+it uses the local branch `entomologist-data`.  This means only one
+worktree can exist at a time, because each branch can only be checked
+out into at most one worktree.
+
+Some ent operations are read-only which means we could `git worktree add`
+the `origin/entomologist-data` branch instead, which uses a detached HEAD
+checkout, which is sufficient for read-only operations like `ent list`
+and `ent show`.
+
+This would be useful if you're sitting in `ent edit ${ISSUE_1}` and want
+to look at another issue with `ent show ${ISSUE_2}` or list the issues
+with `ent list`.
