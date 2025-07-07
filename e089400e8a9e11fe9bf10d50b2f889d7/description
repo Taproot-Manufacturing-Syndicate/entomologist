@@ -1,0 +1,15 @@
+keep local `entomologist-data` branch in sync with `origin/entomologist-data`
+
+My git workflow does not use `git pull`, instead i:
+1. `git fetch`
+2. `git merge` or `git rebase`
+
+When i run `git fetch` to fetch new issues, my local
+`entomologist-data` branch does not get automatically synchronized with
+`origin/entomologist-data`.
+
+The clumsy workaround is:
+1. `git fetch`
+2. `git checkout entomologist-data`
+3. `git merge origin/entomologist-data`
+4. `git checkout ${BRANCH}`
