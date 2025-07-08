@@ -1,0 +1,5 @@
+Mostly implemented:
+- each issue has a `comments/` directory
+- each comment is a subdirectory of `comments/`
+- each comment-directory is named with a 128-bit nonce
+- each comment has only a single "field": `description`
