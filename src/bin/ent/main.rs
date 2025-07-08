@@ -150,6 +150,9 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                     if let Some(dependencies) = &issue.dependencies {
                         println!("dependencies: {:?}", dependencies);
                     }
+                    if let Some(assignee) = &issue.assignee {
+                        println!("assignee: {}", assignee);
+                    }
                     println!("");
                     println!("{}", issue.description);
                     for comment in &issue.comments {

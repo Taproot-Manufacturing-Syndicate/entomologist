@@ -24,6 +24,7 @@ pub struct Issue {
     pub timestamp: chrono::DateTime<chrono::Local>,
     pub state: State,
     pub dependencies: Option<Vec<IssueHandle>>,
+    pub assignee: Option<String>,
     pub description: String,
     pub comments: Vec<crate::comment::Comment>,
 
@@ -90,6 +91,7 @@ impl Issue {
         let mut state = State::New; // default state, if not specified in the issue
         let mut dependencies: Option<Vec<String>> = None;
         let mut comments = Vec::<crate::comment::Comment>::new();
+        let mut assignee: Option<String> = None;
 
         for direntry in dir.read_dir()? {
             if let Ok(direntry) = direntry {
@@ -99,6 +101,10 @@ impl Issue {
                 } else if file_name == "state" {
                     let state_string = std::fs::read_to_string(direntry.path())?;
                     state = State::from_str(state_string.trim())?;
+                } else if file_name == "assignee" {
+                    assignee = Some(String::from(
+                        std::fs::read_to_string(direntry.path())?.trim(),
+                    ));
                 } else if file_name == "dependencies" {
                     let dep_strings = std::fs::read_to_string(direntry.path())?;
                     let deps: Vec<IssueHandle> = dep_strings
@@ -129,6 +135,7 @@ impl Issue {
             timestamp,
             state: state,
             dependencies,
+            assignee,
             description: description.unwrap(),
             comments,
             dir: std::path::PathBuf::from(dir),
@@ -180,6 +187,7 @@ impl Issue {
             timestamp: chrono::Local::now(),
             state: State::New,
             dependencies: None,
+            assignee: None,
             description: String::from(""), // FIXME: kind of bogus to use the empty string as None
             comments: Vec::<crate::comment::Comment>::new(),
             dir: issue_dir,
@@ -260,6 +268,7 @@ mod tests {
                 .with_timezone(&chrono::Local),
             state: State::New,
             dependencies: None,
+            assignee: None,
             description: String::from("this is the title of my issue\n\nThis is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n"),
             comments: Vec::<crate::comment::Comment>::new(),
             dir: std::path::PathBuf::from(issue_dir),
@@ -278,6 +287,7 @@ mod tests {
                 .with_timezone(&chrono::Local),
             state: State::InProgress,
             dependencies: None,
+            assignee: Some(String::from("beep boop")),
             description: String::from("minimal"),
             comments: Vec::<crate::comment::Comment>::new(),
             dir: std::path::PathBuf::from(issue_dir),
