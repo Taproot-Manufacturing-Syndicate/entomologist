@@ -106,12 +106,15 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                 println!("{:?}:", state);
                 for uuid in these_uuids {
                     let issue = issues.issues.get(*uuid).unwrap();
-                    let num_comments = issue.comments.len();
-                    if num_comments == 0 {
-                        println!("{}       {}", uuid, issue.title());
-                    } else {
-                        println!("{}  🗩 {}  {}", uuid, num_comments, issue.title());
-                    }
+                    let comments = match issue.comments.len() {
+                        0 => String::from("   "),
+                        n => format!("🗩 {}", n),
+                    };
+                    let assignee = match &issue.assignee {
+                        Some(assignee) => format!(" (👉 {})", assignee),
+                        None => String::from(""),
+                    };
+                    println!("{}  {}  {}{}", uuid, comments, issue.title(), assignee);
                 }
                 println!("");
             }
