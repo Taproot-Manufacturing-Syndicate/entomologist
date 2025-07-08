@@ -66,10 +66,43 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             let issues =
                 entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
             let filter = entomologist::parse_filter(filter)?;
+            let mut uuids_by_state = std::collections::HashMap::<
+                entomologist::issue::State,
+                Vec<&entomologist::issue::IssueHandle>,
+            >::new();
             for (uuid, issue) in issues.issues.iter() {
                 if filter.include_states.contains(&issue.state) {
-                    println!("{} {} ({:?})", uuid, issue.title(), issue.state);
+                    uuids_by_state
+                        .entry(issue.state.clone())
+                        .or_default()
+                        .push(uuid);
                 }
+            }
+
+            use entomologist::issue::State;
+            for state in [
+                State::InProgress,
+                State::Blocked,
+                State::Backlog,
+                State::New,
+                State::Done,
+                State::WontDo,
+            ] {
+                let these_uuids = uuids_by_state.entry(state.clone()).or_default();
+                if these_uuids.len() == 0 {
+                    continue;
+                }
+                these_uuids.sort_by(|a_id, b_id| {
+                    let a = issues.issues.get(*a_id).unwrap();
+                    let b = issues.issues.get(*b_id).unwrap();
+                    a.timestamp.cmp(&b.timestamp)
+                });
+                println!("{:?}:", state);
+                for uuid in these_uuids {
+                    let issue = issues.issues.get(*uuid).unwrap();
+                    println!("{} {}", uuid, issue.title());
+                }
+                println!("");
             }
         }
 
