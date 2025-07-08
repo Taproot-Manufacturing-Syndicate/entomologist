@@ -191,6 +191,7 @@ pub fn git_log_oldest_timestamp(
         .args([
             "log",
             "--pretty=format:%at",
+            "--",
             &path.file_name().unwrap().to_string_lossy(),
         ])
         .current_dir(&git_dir)
@@ -201,7 +202,8 @@ pub fn git_log_oldest_timestamp(
         return Err(GitError::Oops);
     }
     let timestamp_str = std::str::from_utf8(&result.stdout).unwrap();
-    let timestamp_i64 = timestamp_str.parse::<i64>()?;
+    let timestamp_last = timestamp_str.split("\n").last().unwrap();
+    let timestamp_i64 = timestamp_last.parse::<i64>()?;
     let timestamp = chrono::DateTime::from_timestamp(timestamp_i64, 0)
         .unwrap()
         .with_timezone(&chrono::Local);
