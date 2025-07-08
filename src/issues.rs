@@ -35,6 +35,14 @@ impl Issues {
         self.issues.insert(uuid, issue);
     }
 
+    pub fn get_issue(&self, issue_id: &str) -> Option<&crate::issue::Issue> {
+        self.issues.get(issue_id)
+    }
+
+    pub fn get_mut_issue(&mut self, issue_id: &str) -> Option<&mut crate::issue::Issue> {
+        self.issues.get_mut(issue_id)
+    }
+
     fn parse_config(&mut self, config_path: &std::path::Path) -> Result<(), ReadIssuesError> {
         let config_contents = std::fs::read_to_string(config_path)?;
         let config: Config = toml::from_str(&config_contents)?;
