@@ -75,7 +75,6 @@ impl fmt::Display for State {
             State::InProgress => "inprogress",
             State::Done => "done",
             State::WontDo => "wontdo",
-            
         };
         write!(f, "{fmt_str}")
     }
@@ -145,7 +144,6 @@ impl Issue {
         let mut dir = std::path::PathBuf::from(&self.dir);
         dir.push("comments");
         if !dir.exists() {
-            println!("creating {}", dir.to_string_lossy());
             std::fs::create_dir(&dir)?;
         }
 
