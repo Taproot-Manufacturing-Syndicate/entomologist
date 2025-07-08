@@ -3,4 +3,5 @@ add optional 'assignee' to issue
 This is probably just another free-form text string for now, maybe
 something fancier in the future.
 
-As part of this, teach `ent list FILTER` to filter by assignee.
+NOTE: Teaching `ent list FILTER` to filter by assignee is a separate
+issue.
