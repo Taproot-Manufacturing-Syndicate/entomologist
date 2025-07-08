@@ -1,0 +1,5 @@
+> should we also add timestamps to the comments in text? or should we just rely on the filesystem/git time?
+
+I think the "creation time" of a comment is the commit time of the oldest
+commit that touches the comment.  We can get this from something like:
+$ git log --pretty=format:%at entomologist-data -- ${ISSUE}/comments/${COMMENT}
