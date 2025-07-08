@@ -1,0 +1,59 @@
+shorten uuids to uniqueness
+
+We currently use 128-bit uuids for all objects (Issue and Comment),
+which is a bit cumbersome to work with on the command line.
+
+A typical issue list might look like this:
+```
+$ ent list
+093e87e8049b93bfa2d8fcd544cae75f add optional 'assignee' to issue (New)
+198a7d56a19f0579fbc04f2ee9cc234f fix ignoring unknown file in issues directory: "README.md" (Done)
+1ebdee0502937bf934bb0d72256dbdd1 add delete subcommand to delete ENTries (heh) (New)
+1f85dfac686d5ea2417b2b07f7e1ff01 # implement `ent attach ${ISSUE} ${FILE}` (New)
+317ea8ccac1d414cde55771321bdec30 allow multiple read-only ent processes simultaneously (New)
+75cefad80aacbf23fc7b9c24a75aa236 # implement `ent comment ISSUE [DESCRIPTION]` (InProgress)
+7da3bd5b72de0a05936b094db5d24304 implement `ent edit ${COMMENT}` (New)
+8c73c9fd5bc4f551ee5069035ae6e866 migrate the Todo list into entomologist (Done)
+8edf884dbde5828a30a4dccad503f28a add sync subcommand to sync entomologist-data branch (WontDo)
+a26da230276d317e85f9fcca41c19d2e `ent edit ${ISSUE}` with no change fails (New)
+a97c817024233be0e34536dfb1323070 update `ent new` to output the issue ID (New)
+b738f2842db428df1b4aad0192a7f36c write a manpage (New)
+da435e5e298b28dc223f9dcfe62a9140 add user control over state transitions (Done)
+e089400e8a9e11fe9bf10d50b2f889d7 add `ent sync` to keep local `entomologist-data` branch in sync with remote (InProgress)
+eee4a129dacac9ddff2e50580e822cbf ent edit fails to find file/directory (New)
+f57708cdac0607194ba61824e857b37c shorten uuids to uniqueness (New)
+fd81241f795333b64e7911cfb1b57c8f commit messages in the `entomologist-data` branch could be better (New)
+```
+
+After deserializing the `entomologist-data` branch into memory, examine
+all uuids and determine how many nibbles we actually need to use to
+ensure uniqueness.
+
+Per git convention, we'll use/keep the left-most, aka most significant
+part of the uuid and ignore/discard the right-most/least-significant
+part of the uuids.
+
+The issue list above would look like this:
+```
+$ ent list
+09 add optional 'assignee' to issue (New)
+19 fix ignoring unknown file in issues directory: "README.md" (Done)
+1e add delete subcommand to delete ENTries (heh) (New)
+1f # implement `ent attach ${ISSUE} ${FILE}` (New)
+31 allow multiple read-only ent processes simultaneously (New)
+75 # implement `ent comment ISSUE [DESCRIPTION]` (InProgress)
+7d implement `ent edit ${COMMENT}` (New)
+8c migrate the Todo list into entomologist (Done)
+8e add sync subcommand to sync entomologist-data branch (WontDo)
+a2 `ent edit ${ISSUE}` with no change fails (New)
+a9 update `ent new` to output the issue ID (New)
+b7 write a manpage (New)
+da add user control over state transitions (Done)
+e0 add `ent sync` to keep local `entomologist-data` branch in sync with remote (InProgress)
+ee ent edit fails to find file/directory (New)
+f5 shorten uuids to uniqueness (New)
+fd commit messages in the `entomologist-data` branch could be better (New)
+```
+
+And we could address issues by these shorter ids:
+`$ ent edit f5`
