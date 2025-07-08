@@ -144,7 +144,6 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             let Some(issue) = issues.get_mut_issue(issue_id) else {
                 return Err(anyhow::anyhow!("issue {} not found", issue_id));
             };
-            println!("found issue {}", issue.title());
             let mut comment = issue.new_comment()?;
             match description {
                 Some(description) => {
