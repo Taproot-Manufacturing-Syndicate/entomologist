@@ -1,5 +1,6 @@
 use clap::Parser;
 
+use entomologist::issue::State;
 #[cfg(feature = "log")]
 use simple_logger;
 
@@ -32,6 +33,9 @@ enum Commands {
 
     /// Show the full description of an issue.
     Show { issue_id: String },
+
+    /// Modify the state of an issue
+    State { issue_id: String, new_state: Option<State> },
 }
 
 fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<()> {
@@ -76,6 +80,31 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                     println!("state {:?}", issue.state);
                     println!("");
                     println!("{}", issue.description);
+                }
+                None => {
+                    println!("issue {} not found", issue_id);
+                }
+            }
+        }
+        Commands::State { issue_id, new_state } => {
+            let mut issues =
+                entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
+            match issues.issues.get_mut(issue_id) {
+                Some(issue) => {
+                   let current_state = issue.state.clone();
+
+                    match new_state {
+                        Some(s) => {
+                            issue.set_state(s.clone())?;
+                            println!("issue: {}", issue_id);
+                            println!("state: {} -> {}", current_state, s);
+                        }
+                        None => {
+                            println!("issue: {}", issue_id);
+                            println!("state: {}", current_state);
+                        }
+                    }
+                   
                 }
                 None => {
                     println!("issue {} not found", issue_id);
