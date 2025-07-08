@@ -152,8 +152,9 @@ mod tests {
         expected_comments.push(
             crate::comment::Comment {
                 uuid: comment_uuid,
-                description: String::from("This is a comment on issue dd79c8cfb8beeacd0460429944b4ecbe95a31561\n\nIt has multiple lines\n"),
+                author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
                 timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-07T15:26:26-06:00").unwrap().with_timezone(&chrono::Local),
+                description: String::from("This is a comment on issue dd79c8cfb8beeacd0460429944b4ecbe95a31561\n\nIt has multiple lines\n"),
                 dir: std::path::PathBuf::from(comment_dir),
             }
         );

@@ -156,6 +156,7 @@ impl Issue {
 
         Ok(crate::comment::Comment {
             uuid,
+            author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
             timestamp: chrono::Local::now(),
             description: String::from(""), // FIXME
             dir,

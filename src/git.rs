@@ -210,6 +210,28 @@ pub fn git_log_oldest_timestamp(
     Ok(timestamp)
 }
 
+pub fn git_log_oldest_author(path: &std::path::Path) -> Result<String, GitError> {
+    let mut git_dir = std::path::PathBuf::from(path);
+    git_dir.pop();
+    let result = std::process::Command::new("git")
+        .args([
+            "log",
+            "--pretty=format:%an <%ae>",
+            "--",
+            &path.file_name().unwrap().to_string_lossy(),
+        ])
+        .current_dir(&git_dir)
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+    let author_str = std::str::from_utf8(&result.stdout).unwrap();
+    let author_last = author_str.split("\n").last().unwrap();
+    Ok(String::from(author_last))
+}
+
 pub fn create_orphan_branch(branch: &str) -> Result<(), GitError> {
     {
         let tmp_worktree = tempfile::tempdir().unwrap();

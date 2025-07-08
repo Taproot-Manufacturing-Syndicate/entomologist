@@ -3,6 +3,7 @@ use std::io::Write;
 #[derive(Debug, PartialEq)]
 pub struct Comment {
     pub uuid: String,
+    pub author: String,
     pub timestamp: chrono::DateTime<chrono::Local>,
     pub description: String,
 
@@ -45,11 +46,13 @@ impl Comment {
             return Err(CommentError::CommentParseError);
         }
 
+        let author = crate::git::git_log_oldest_author(comment_dir)?;
         let timestamp = crate::git::git_log_oldest_timestamp(comment_dir)?;
         let dir = std::path::PathBuf::from(comment_dir);
 
         Ok(Self {
             uuid: String::from(dir.file_name().unwrap().to_string_lossy()),
+            author,
             timestamp,
             description: description.unwrap(),
             dir: std::path::PathBuf::from(comment_dir),
@@ -102,6 +105,7 @@ mod tests {
         let comment = Comment::new_from_dir(comment_dir).unwrap();
         let expected = Comment {
             uuid: String::from("9055dac36045fe36545bed7ae7b49347"),
+            author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
             timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-07T15:26:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
