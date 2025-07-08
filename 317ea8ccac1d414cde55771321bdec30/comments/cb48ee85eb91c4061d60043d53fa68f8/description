@@ -1,0 +1,4 @@
+Currently the `ent` program makes a worktree before considering what
+command it's supposed to run.  Which is nice because it simplifies each
+command handler, but it's bad because different command handlers will
+want different kinds of worktrees to implement this issue.
