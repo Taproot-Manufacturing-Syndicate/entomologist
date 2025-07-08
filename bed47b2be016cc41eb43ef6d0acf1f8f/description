@@ -1,0 +1,6 @@
+add some way to un-assign an issue
+
+This will probably involve removing the `assignee` file from the issue
+directory, which will mean teaching the git code about removed files.
+
+Or maybe write the empty string to that file?
