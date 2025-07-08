@@ -251,6 +251,15 @@ impl Issue {
         self.state = State::from_str(state_string.trim())?;
         Ok(())
     }
+
+    pub fn set_assignee(&mut self, new_assignee: &str) -> Result<(), IssueError> {
+        let mut assignee_filename = std::path::PathBuf::from(&self.dir);
+        assignee_filename.push("assignee");
+        let mut assignee_file = std::fs::File::create(&assignee_filename)?;
+        write!(assignee_file, "{}", new_assignee)?;
+        crate::git::git_commit_file(&assignee_filename)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

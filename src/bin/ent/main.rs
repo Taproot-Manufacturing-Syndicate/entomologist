@@ -58,6 +58,12 @@ enum Commands {
         #[arg(default_value_t = String::from("origin"))]
         remote: String,
     },
+
+    /// Get or set the Assignee field of an Issue.
+    Assign {
+        issue_id: String,
+        new_assignee: Option<String>,
+    },
 }
 
 fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<()> {
@@ -233,6 +239,37 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             };
             entomologist::git::sync(issues_dir, remote, branch)?;
             println!("synced {:?} with {:?}", branch, remote);
+        }
+
+        Commands::Assign {
+            issue_id,
+            new_assignee,
+        } => {
+            let mut issues =
+                entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
+            let Some(issue) = issues.issues.get_mut(issue_id) else {
+                return Err(anyhow::anyhow!("issue {} not found", issue_id));
+            };
+            match (&issue.assignee, new_assignee) {
+                (Some(old_assignee), Some(new_assignee)) => {
+                    println!("issue: {}", issue_id);
+                    println!("assignee: {} -> {}", old_assignee, new_assignee);
+                    issue.set_assignee(new_assignee)?;
+                }
+                (Some(old_assignee), None) => {
+                    println!("issue: {}", issue_id);
+                    println!("assignee: {}", old_assignee);
+                }
+                (None, Some(new_assignee)) => {
+                    println!("issue: {}", issue_id);
+                    println!("assignee: None -> {}", new_assignee);
+                    issue.set_assignee(new_assignee)?;
+                }
+                (None, None) => {
+                    println!("issue: {}", issue_id);
+                    println!("assignee: None");
+                }
+            }
         }
     }
 
