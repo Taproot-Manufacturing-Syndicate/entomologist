@@ -1,0 +1,4 @@
+`ent list` should have a consistent sort order
+
+Maybe first sort and group by State, and sort chronologically (by Issue
+creation time) within each State grouping?
