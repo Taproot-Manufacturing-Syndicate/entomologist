@@ -1,6 +1,6 @@
-# implement `ent comment ${ISSUE} [-m ${MESSAGE}]`
+# implement `ent comment ISSUE [DESCRIPTION]`
 
 - each issue dir has a `comments` subdir
-- each comment is identified by a sha1-style uid
-- each comment is a file or directory under the `${ISSUE}/comments`
-- comments are ordered by ctime?
+- each comment is identified by a 128-bit nonce
+- each comment is a directory under `${ISSUE}/comments`
+- each comment has a single "field": `description`
