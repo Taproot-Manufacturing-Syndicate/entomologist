@@ -2,6 +2,8 @@ use std::io::Write;
 
 #[derive(Debug, PartialEq)]
 pub struct Comment {
+    pub uuid: String,
+    pub timestamp: chrono::DateTime<chrono::Local>,
     pub description: String,
 
     /// This is the directory that the comment lives in.  Only used
@@ -39,12 +41,16 @@ impl Comment {
                 }
             }
         }
-
         if description == None {
             return Err(CommentError::CommentParseError);
         }
 
+        let timestamp = crate::git::git_log_oldest_timestamp(comment_dir)?;
+        let dir = std::path::PathBuf::from(comment_dir);
+
         Ok(Self {
+            uuid: String::from(dir.file_name().unwrap().to_string_lossy()),
+            timestamp,
             description: description.unwrap(),
             dir: std::path::PathBuf::from(comment_dir),
         })
@@ -95,8 +101,11 @@ mod tests {
             std::path::Path::new("test/0001/dd79c8cfb8beeacd0460429944b4ecbe95a31561/comments/9055dac36045fe36545bed7ae7b49347");
         let comment = Comment::new_from_dir(comment_dir).unwrap();
         let expected = Comment {
+            uuid: String::from("9055dac36045fe36545bed7ae7b49347"),
+            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-07T15:26:26-06:00")
+                .unwrap()
+                .with_timezone(&chrono::Local),
             description: String::from("This is a comment on issue dd79c8cfb8beeacd0460429944b4ecbe95a31561\n\nIt has multiple lines\n"),
-
             dir: std::path::PathBuf::from(comment_dir),
         };
         assert_eq!(comment, expected);

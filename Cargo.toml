@@ -9,6 +9,7 @@ log = ["dep:log", "dep:simple_logger"]
 
 [dependencies]
 anyhow = "1.0.95"
+chrono = "0.4.41"
 clap = { version = "4.5.26", features = ["derive"] }
 log = { version = "0.4.27", optional = true }
 rand = "0.9.1"

@@ -4,6 +4,8 @@ use std::io::Write;
 pub enum GitError {
     #[error(transparent)]
     StdIoError(#[from] std::io::Error),
+    #[error(transparent)]
+    ParseIntError(#[from] std::num::ParseIntError),
     #[error("Oops, something went wrong")]
     Oops,
 }
@@ -178,6 +180,32 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
     }
 
     Ok(())
+}
+
+pub fn git_log_oldest_timestamp(
+    path: &std::path::Path,
+) -> Result<chrono::DateTime<chrono::Local>, GitError> {
+    let mut git_dir = std::path::PathBuf::from(path);
+    git_dir.pop();
+    let result = std::process::Command::new("git")
+        .args([
+            "log",
+            "--pretty=format:%at",
+            &path.file_name().unwrap().to_string_lossy(),
+        ])
+        .current_dir(&git_dir)
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+    let timestamp_str = std::str::from_utf8(&result.stdout).unwrap();
+    let timestamp_i64 = timestamp_str.parse::<i64>()?;
+    let timestamp = chrono::DateTime::from_timestamp(timestamp_i64, 0)
+        .unwrap()
+        .with_timezone(&chrono::Local);
+    Ok(timestamp)
 }
 
 pub fn create_orphan_branch(branch: &str) -> Result<(), GitError> {
