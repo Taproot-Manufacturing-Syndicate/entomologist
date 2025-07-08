@@ -39,6 +39,12 @@ enum Commands {
         issue_id: String,
         new_state: Option<State>,
     },
+
+    /// Create a new comment on an issue.
+    Comment {
+        issue_id: String,
+        description: Option<String>,
+    },
 }
 
 fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<()> {
@@ -90,6 +96,11 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                     }
                     println!("");
                     println!("{}", issue.description);
+                    for (uuid, comment) in issue.comments.iter() {
+                        println!("");
+                        println!("comment: {}", uuid);
+                        println!("{}", comment.description);
+                    }
                 }
                 None => {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
@@ -120,6 +131,26 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                 }
                 None => {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                }
+            }
+        }
+
+        Commands::Comment {
+            issue_id,
+            description,
+        } => {
+            let mut issues =
+                entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
+            let Some(issue) = issues.get_mut_issue(issue_id) else {
+                return Err(anyhow::anyhow!("issue {} not found", issue_id));
+            };
+            let mut comment = issue.new_comment()?;
+            match description {
+                Some(description) => {
+                    comment.set_description(description)?;
+                }
+                None => {
+                    comment.edit_description()?;
                 }
             }
         }

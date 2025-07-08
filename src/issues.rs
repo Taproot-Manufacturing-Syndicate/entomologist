@@ -99,6 +99,7 @@ mod tests {
                 description: String::from("minimal"),
                 state: crate::issue::State::InProgress,
                 dependencies: None,
+                comments: std::collections::HashMap::<String, crate::comment::Comment>::new(),
                 dir,
             },
         );
@@ -112,6 +113,7 @@ mod tests {
                 description: String::from("this is the title of my issue\n\nThis is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n"),
                 state: crate::issue::State::New,
                 dependencies: None,
+                comments: std::collections::HashMap::<String, crate::comment::Comment>::new(),
                 dir,
             }
         );
@@ -134,6 +136,7 @@ mod tests {
                 description: String::from("oh yeah we got titles"),
                 state: crate::issue::State::Done,
                 dependencies: None,
+                comments: std::collections::HashMap::<String, crate::comment::Comment>::new(),
                 dir,
             },
         );
@@ -141,12 +144,26 @@ mod tests {
         let uuid = String::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561");
         let mut dir = std::path::PathBuf::from(issues_dir);
         dir.push(&uuid);
+        let mut comment_dir = dir.clone();
+        let comment_uuid = String::from("9055dac36045fe36545bed7ae7b49347");
+        comment_dir.push("comments");
+        comment_dir.push(&comment_uuid);
+        let mut expected_comments =
+            std::collections::HashMap::<String, crate::comment::Comment>::new();
+        expected_comments.insert(
+            String::from(&comment_uuid),
+            crate::comment::Comment {
+                description: String::from("This is a comment on issue dd79c8cfb8beeacd0460429944b4ecbe95a31561\n\nIt has multiple lines\n"),
+                dir: std::path::PathBuf::from(comment_dir),
+            }
+        );
         expected.add_issue(
             uuid,
             crate::issue::Issue {
                 description: String::from("issues out the wazoo\n\nLots of words\nthat don't say much\nbecause this is just\na test\n"),
                 state: crate::issue::State::WontDo,
                 dependencies: None,
+                comments: expected_comments,
                 dir,
             },
         );
@@ -169,6 +186,7 @@ mod tests {
                 description: String::from("oh yeah we got titles\n"),
                 state: crate::issue::State::Done,
                 dependencies: None,
+                comments: std::collections::HashMap::<String, crate::comment::Comment>::new(),
                 dir,
             },
         );
@@ -182,6 +200,7 @@ mod tests {
                 description: String::from("issues out the wazoo\n\nLots of words\nthat don't say much\nbecause this is just\na test\n"),
                 state: crate::issue::State::WontDo,
                 dependencies: None,
+                comments: std::collections::HashMap::<String, crate::comment::Comment>::new(),
                 dir,
             },
         );
@@ -198,6 +217,7 @@ mod tests {
                     crate::issue::IssueHandle::from("3fa5bfd93317ad25772680071d5ac3259cd2384f"),
                     crate::issue::IssueHandle::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561"),
                 ]),
+                comments: std::collections::HashMap::<String, crate::comment::Comment>::new(),
                 dir,
             },
         );
