@@ -124,6 +124,62 @@ pub fn git_commit_file(file: &std::path::Path) -> Result<(), GitError> {
     Ok(())
 }
 
+pub fn git_fetch(dir: &std::path::Path, remote: &str) -> Result<(), GitError> {
+    let result = std::process::Command::new("git")
+        .args(["fetch", remote])
+        .current_dir(dir)
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+    Ok(())
+}
+
+pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), GitError> {
+    // We do all the work in a directory that's (FIXME) hopefully a
+    // worktree.  If anything goes wrong we just fail out and ask the
+    // human to fix it by hand :-/
+    // 1. `git fetch`
+    // 2. `git merge REMOTE/BRANCH`
+    // 3. `git push REMOTE BRANCH`
+
+    git_fetch(dir, remote)?;
+
+    // Merge remote branch into local.
+    let result = std::process::Command::new("git")
+        .args(["merge", &format!("{}/{}", remote, branch)])
+        .current_dir(dir)
+        .output()?;
+    if !result.status.success() {
+        println!(
+            "Sync failed!  Merge error!  Help, a human needs to fix the mess in {:?}",
+            dir
+        );
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+
+    // Push merged branch to remote.
+    let result = std::process::Command::new("git")
+        .args(["push", remote, branch])
+        .current_dir(dir)
+        .output()?;
+    if !result.status.success() {
+        println!(
+            "Sync failed!  Push error!  Help, a human needs to fix the mess in {:?}",
+            dir
+        );
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+
+    Ok(())
+}
+
 pub fn create_orphan_branch(branch: &str) -> Result<(), GitError> {
     {
         let tmp_worktree = tempfile::tempdir().unwrap();

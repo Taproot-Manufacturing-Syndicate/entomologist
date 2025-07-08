@@ -45,6 +45,15 @@ enum Commands {
         issue_id: String,
         description: Option<String>,
     },
+
+    /// Sync entomologist data with remote.  This fetches from the remote,
+    /// merges the remote entomologist data branch with the local one,
+    /// and pushes the result back to the remote.
+    Sync {
+        /// Name of the git remote to sync with.
+        #[arg(default_value_t = String::from("origin"))]
+        remote: String,
+    },
 }
 
 fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<()> {
@@ -153,6 +162,25 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                     comment.edit_description()?;
                 }
             }
+        }
+
+        Commands::Sync { remote } => {
+            if args.issues_dir.is_some() {
+                return Err(anyhow::anyhow!(
+                    "`sync` operates on a branch, don't specify `issues_dir`"
+                ));
+            }
+            // FIXME: Kinda bogus to re-do this thing we just did in
+            // `main()`.  Maybe `main()` shouldn't create the worktree,
+            // maybe we should do it here in `handle_command()`?
+            // That way also each command could decide if it wants a
+            // read-only worktree or a read/write one.
+            let branch = match &args.issues_branch {
+                Some(branch) => branch,
+                None => "entomologist-data",
+            };
+            entomologist::git::sync(issues_dir, remote, branch)?;
+            println!("synced {:?} with {:?}", branch, remote);
         }
     }
 
