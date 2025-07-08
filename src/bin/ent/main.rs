@@ -23,7 +23,11 @@ struct Args {
 #[derive(clap::Subcommand, Debug)]
 enum Commands {
     /// List issues.
-    List,
+    List {
+        /// Filter string, describes issues to include in the list.
+        #[arg(default_value_t = String::from("state=New,Backlog,Blocked,InProgress"))]
+        filter: String,
+    },
 
     /// Create a new issue.
     New { description: Option<String> },
@@ -49,11 +53,14 @@ enum Commands {
 
 fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<()> {
     match &args.command {
-        Commands::List => {
+        Commands::List { filter } => {
             let issues =
                 entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
+            let filter = entomologist::parse_filter(filter)?;
             for (uuid, issue) in issues.issues.iter() {
-                println!("{} {} ({:?})", uuid, issue.title(), issue.state);
+                if filter.include_states.contains(&issue.state) {
+                    println!("{} {} ({:?})", uuid, issue.title(), issue.state);
+                }
             }
         }
 
