@@ -180,6 +180,7 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                 None => "entomologist-data",
             };
             entomologist::git::sync(issues_dir, remote, branch)?;
+            println!("synced {:?} with {:?}", branch, remote);
         }
     }
 
