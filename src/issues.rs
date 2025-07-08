@@ -96,9 +96,13 @@ mod tests {
         expected.add_issue(
             uuid,
             crate::issue::Issue {
-                description: String::from("minimal"),
+                author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
+                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+                    .unwrap()
+                    .with_timezone(&chrono::Local),
                 state: crate::issue::State::InProgress,
                 dependencies: None,
+                description: String::from("minimal"),
                 comments: Vec::<crate::comment::Comment>::new(),
                 dir,
             },
@@ -110,9 +114,13 @@ mod tests {
         expected.add_issue(
             uuid,
             crate::issue::Issue {
-                description: String::from("this is the title of my issue\n\nThis is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n"),
+                author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
+                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+                    .unwrap()
+                    .with_timezone(&chrono::Local),
                 state: crate::issue::State::New,
                 dependencies: None,
+                description: String::from("this is the title of my issue\n\nThis is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n"),
                 comments: Vec::<crate::comment::Comment>::new(),
                 dir,
             }
@@ -133,9 +141,13 @@ mod tests {
         expected.add_issue(
             uuid,
             crate::issue::Issue {
-                description: String::from("oh yeah we got titles"),
+                author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
+                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T11:59:44-06:00")
+                    .unwrap()
+                    .with_timezone(&chrono::Local),
                 state: crate::issue::State::Done,
                 dependencies: None,
+                description: String::from("oh yeah we got titles"),
                 comments: Vec::<crate::comment::Comment>::new(),
                 dir,
             },
@@ -161,9 +173,13 @@ mod tests {
         expected.add_issue(
             uuid,
             crate::issue::Issue {
-                description: String::from("issues out the wazoo\n\nLots of words\nthat don't say much\nbecause this is just\na test\n"),
+                author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
+                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T11:59:44-06:00")
+                    .unwrap()
+                    .with_timezone(&chrono::Local),
                 state: crate::issue::State::WontDo,
                 dependencies: None,
+                description: String::from("issues out the wazoo\n\nLots of words\nthat don't say much\nbecause this is just\na test\n"),
                 comments: expected_comments,
                 dir,
             },
@@ -184,9 +200,13 @@ mod tests {
         expected.add_issue(
             uuid,
             crate::issue::Issue {
-                description: String::from("oh yeah we got titles\n"),
+                author: String::from("sigil-03 <sigil@glyphs.tech>"),
+                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
+                    .unwrap()
+                    .with_timezone(&chrono::Local),
                 state: crate::issue::State::Done,
                 dependencies: None,
+                description: String::from("oh yeah we got titles\n"),
                 comments: Vec::<crate::comment::Comment>::new(),
                 dir,
             },
@@ -198,9 +218,13 @@ mod tests {
         expected.add_issue(
             uuid,
             crate::issue::Issue {
-                description: String::from("issues out the wazoo\n\nLots of words\nthat don't say much\nbecause this is just\na test\n"),
+                author: String::from("sigil-03 <sigil@glyphs.tech>"),
+                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
+                    .unwrap()
+                    .with_timezone(&chrono::Local),
                 state: crate::issue::State::WontDo,
                 dependencies: None,
+                description: String::from("issues out the wazoo\n\nLots of words\nthat don't say much\nbecause this is just\na test\n"),
                 comments: Vec::<crate::comment::Comment>::new(),
                 dir,
             },
@@ -212,12 +236,16 @@ mod tests {
         expected.add_issue(
             uuid,
             crate::issue::Issue {
-                description: String::from("issue with dependencies\n\na test has begun\nfor dependencies we seek\nintertwining life"),
+                author: String::from("sigil-03 <sigil@glyphs.tech>"),
+                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
+                    .unwrap()
+                    .with_timezone(&chrono::Local),
                 state: crate::issue::State::WontDo,
                 dependencies: Some(vec![
                     crate::issue::IssueHandle::from("3fa5bfd93317ad25772680071d5ac3259cd2384f"),
                     crate::issue::IssueHandle::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561"),
                 ]),
+                description: String::from("issue with dependencies\n\na test has begun\nfor dependencies we seek\nintertwining life"),
                 comments: Vec::<crate::comment::Comment>::new(),
                 dir,
             },

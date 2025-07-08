@@ -106,6 +106,8 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             match issues.get_issue(issue_id) {
                 Some(issue) => {
                     println!("issue {}", issue_id);
+                    println!("author: {}", issue.author);
+                    println!("timestamp: {}", issue.timestamp);
                     println!("state: {:?}", issue.state);
                     if let Some(dependencies) = &issue.dependencies {
                         println!("dependencies: {:?}", dependencies);
