@@ -1,4 +1,4 @@
-keep local `entomologist-data` branch in sync with remote
+add `ent sync` to keep local `entomologist-data` branch in sync with remote
 
 My git workflow does not use `git pull`, instead i:
 1. `git fetch`
@@ -8,8 +8,9 @@ When i run `git fetch` to fetch new issues, my local
 `entomologist-data` branch does not get automatically synchronized with
 `origin/entomologist-data`.
 
-The clumsy workaround is:
+My current clumsy manual workaround is:
 1. `git fetch`
 2. `git checkout entomologist-data`
 3. `git merge origin/entomologist-data`
 4. `git checkout ${BRANCH}`
+5. `git push origin entomologist-data`
