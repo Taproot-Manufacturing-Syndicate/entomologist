@@ -1,0 +1,7 @@
+add a way to see how an issue has changed over time
+
+Maybe `ent log ISSUE` (and `ent log COMMENT`)?
+
+This could be a thinly veiled wrapper around:
+
+`git log entomologist-data -- ISSUE`
