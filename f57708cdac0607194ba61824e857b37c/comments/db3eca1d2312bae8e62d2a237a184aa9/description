@@ -1,0 +1,36 @@
+One possible way to determine how much of the UUID we need to keep
+for uniqueness:
+
+* Read the issue database into memory
+
+* Build a tree of all the issue ids:
+
+    * Define a Node type for a tree datastructure as:
+        enum Node {
+            Empty,
+            IssueId(String),
+            SubNodes([&Node; 256]),
+        }
+
+    * Create an empty root node = Node::Empty
+
+    * For each issue:
+        issue_id_bytes = issue_id.iter()
+
+        issue_id_byte = issue_id_bytes.next()
+        current_node = root
+
+        while current_node == SubNodes:
+            current_node = current_node[issue_id_byte]
+            issue_id_byte = issue_id_bytes.next()
+
+        if current_node == Empty:
+            current_node = Node::IssueId(issue_id)
+        else: # we know current_node == IssueId(original_issue_id)
+            replace current_node with a SubNodes initialized to [Node::Empty; 256]
+            current_node[original_issue_id[depth]] = Node::IssueId(original_issue_id)
+            recurse trying again to insert issue_id
+
+* Walk the entire tree, keeping track of the depth of each IssueId node (ie the number of SubNodes nodes above it)
+
+* The largest depth is the number of bytes of the issue ids neede to ensure uniqueness
