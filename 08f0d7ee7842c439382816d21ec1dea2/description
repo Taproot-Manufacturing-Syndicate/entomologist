@@ -1,0 +1,63 @@
+figure out how to make useful reports
+
+In task-warrior we had a pair of custom reports, one to list things we
+did last week and another to list things we were planning to do this
+coming week.
+
+Docs here:
+* custom reports: <https://taskwarrior.org/docs/report/#custom-reports>
+* end date (brief): <https://taskwarrior.org/docs/using_dates/#other-dates>
+
+
+# Done last week
+
+> report.weekly.prev.description='Tasks Completed Last Week'
+> report.weekly.prev.columns=uuid,description.desc,project,assignee,end
+> report.weekly.prev.sort=end+
+> report.weekly.prev.filter=+COMPLETED and -hidden and (end.after=sow - 1 week) and (end.by=eow - 1 week)
+
+The "done last week" report filters on a column called `end`, which is
+a datetime made up by tw indicating when the ticket became COMPLETED.
+
+
+# To do this week
+
+> report.selected.external.description='Tasks Selected for This Week'
+> report.selected.external.columns=project,description.desc,assignee,due
+> report.selected.external.sort=assignee+/,urgency-
+> report.selected.external.filter=-COMPLETED and -internal and -hidden and (due.by=eow or +selected or +interrupt)
+
+The "to do this week" report looks for the tags "selected" or "interrupt",
+or a due date this week.
+
+
+# What is to be done
+
+## Done last week
+
+I can imagine finding the issues with state=done, running `git log`
+on their state file, finding the datetime of the transition to done,
+and selecting the ones where that datetime is in a particular time window.
+
+Not sure how to express to ent that that is what i want though.
+
+Maybe we can use git tags in the entomologist-data branch somehow?
+`git log` between tags and look for "state: _ -> done".  But how to
+position the tags on the commits i want?  Seems cumbersome.
+
+
+## To do this week
+
+entomologist doesn't have due dates yet, but we should probably add that.
+
+entomologist doesn't have tags yet (there's an open ticket for it),
+but once we have that it'll be easy to list "tags=selected,interrupt".
+Or maybe we should just use "state=inprogress"?
+
+
+## Misc thoughts
+
+It's nice that we can add whatever files we want to the
+`entomologist-data` branch.  We could add a directory of report
+definitions, and have them be shared across the project, and not have
+to type them out every time.
