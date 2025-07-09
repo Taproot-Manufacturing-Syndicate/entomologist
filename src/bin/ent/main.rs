@@ -71,18 +71,30 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
         Commands::List { filter } => {
             let issues =
                 entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
-            let filter = entomologist::parse_filter(filter)?;
+            let filter = entomologist::Filter::new_from_str(filter)?;
             let mut uuids_by_state = std::collections::HashMap::<
                 entomologist::issue::State,
                 Vec<&entomologist::issue::IssueHandle>,
             >::new();
             for (uuid, issue) in issues.issues.iter() {
-                if filter.include_states.contains(&issue.state) {
-                    uuids_by_state
-                        .entry(issue.state.clone())
-                        .or_default()
-                        .push(uuid);
+                if !filter.include_states.contains(&issue.state) {
+                    continue;
                 }
+                if filter.include_assignees.len() > 0 {
+                    let assignee = match &issue.assignee {
+                        Some(assignee) => assignee,
+                        None => "",
+                    };
+                    if !filter.include_assignees.contains(assignee) {
+                        continue;
+                    }
+                }
+
+                // This issue passed all the filters, include it in list.
+                uuids_by_state
+                    .entry(issue.state.clone())
+                    .or_default()
+                    .push(uuid);
             }
 
             use entomologist::issue::State;
