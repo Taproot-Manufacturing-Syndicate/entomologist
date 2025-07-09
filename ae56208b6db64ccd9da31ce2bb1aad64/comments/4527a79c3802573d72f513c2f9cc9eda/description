@@ -1,0 +1,15 @@
+```
+$ ent sync
+Enter passphrase for key '/home/seb/.ssh/id_ed25519':
+^C
+
+$ ent sync
+stdout:
+stderr: Preparing worktree (checking out 'entomologist-data')
+fatal: 'entomologist-data' is already used by worktree at '/tmp/.tmpgKK2gw'
+
+Error: Oops, something went wrong
+
+$ rm -rf /tmp/.tmpgKK2gw/
+$ git worktree prune
+```
