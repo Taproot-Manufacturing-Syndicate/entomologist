@@ -5,7 +5,7 @@ use std::str::FromStr;
 #[cfg(feature = "log")]
 use log::debug;
 
-#[derive(Clone, Debug, PartialEq, serde::Deserialize)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, serde::Deserialize)]
 /// These are the states an issue can be in.
 pub enum State {
     New,
@@ -38,6 +38,8 @@ pub enum IssueError {
     CommentError(#[from] crate::comment::CommentError),
     #[error("Failed to parse issue")]
     IssueParseError,
+    #[error("Failed to parse state")]
+    StateParseError,
     #[error("Failed to run git")]
     GitError(#[from] crate::git::GitError),
     #[error("Failed to run editor")]
@@ -61,7 +63,7 @@ impl FromStr for State {
         } else if s == "wontdo" {
             Ok(State::WontDo)
         } else {
-            Err(IssueError::IssueParseError)
+            Err(IssueError::StateParseError)
         }
     }
 }
