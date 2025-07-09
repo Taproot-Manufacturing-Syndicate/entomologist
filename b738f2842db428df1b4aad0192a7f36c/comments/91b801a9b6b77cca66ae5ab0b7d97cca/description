@@ -1,0 +1,38 @@
+# `ent list FILTER` filter format
+
+I'm not sure about the filter format, but here are some notes...
+
+There are (as of df7b5c6aa4a00dfca66dc802f1e813f23f27a5b9) two independent
+filters: "state" and "assignee".  The "state" filter defaults to
+including issues whose state is InProgress, Blocked, Backlog, or New.
+The "assignee" filter defaults to including all issues, assigned or not.
+
+The two filters can be independently overridden by the `ent list
+FILTER` command.  FILTER is a string containing "chunks" separated by
+":", like the PATH environment variable.  Each chunk is of the form
+"name=value[,value...]".  "name" can currently be either "state" or
+"assignee", and we can add more in the future (e.g "tag" or "ctime").
+
+The "value" arguments to the "state" filter must be one of the valid
+states, or it's a parse error.
+
+The "value" arguments to the "assignee" filter are used to
+string-compare against the issues "assignee" field, exact matches are
+accepted and everything else is rejected.  A special assignee filter of
+the empty string matches issues that don't have an assignee.
+
+Some examples:
+
+* `ent list` shows issues in the states listed above, and don't filter
+  based on assignee at all.
+
+* `ent list assignee=seb` shows issues in the states listed above,
+  but only if the assignee is "seb".
+
+* `ent list assignee=seb,` shows issues in the states listed above,
+  but only if the assignee is "seb" or if there is no assignee.
+
+* `ent list state=done` shows all issues in the Done state.
+
+* `ent list state=inprogress:assignee=seb` shows issues in the InProgress
+  state that are assigned to "seb".
