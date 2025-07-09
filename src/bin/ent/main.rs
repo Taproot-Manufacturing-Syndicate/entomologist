@@ -58,6 +58,12 @@ enum Commands {
         #[arg(default_value_t = String::from("origin"))]
         remote: String,
     },
+
+    /// Get or set the Assignee field of an Issue.
+    Assign {
+        issue_id: String,
+        new_assignee: Option<String>,
+    },
 }
 
 fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<()> {
@@ -66,10 +72,51 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             let issues =
                 entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
             let filter = entomologist::parse_filter(filter)?;
+            let mut uuids_by_state = std::collections::HashMap::<
+                entomologist::issue::State,
+                Vec<&entomologist::issue::IssueHandle>,
+            >::new();
             for (uuid, issue) in issues.issues.iter() {
                 if filter.include_states.contains(&issue.state) {
-                    println!("{} {} ({:?})", uuid, issue.title(), issue.state);
+                    uuids_by_state
+                        .entry(issue.state.clone())
+                        .or_default()
+                        .push(uuid);
                 }
+            }
+
+            use entomologist::issue::State;
+            for state in [
+                State::InProgress,
+                State::Blocked,
+                State::Backlog,
+                State::New,
+                State::Done,
+                State::WontDo,
+            ] {
+                let these_uuids = uuids_by_state.entry(state.clone()).or_default();
+                if these_uuids.len() == 0 {
+                    continue;
+                }
+                these_uuids.sort_by(|a_id, b_id| {
+                    let a = issues.issues.get(*a_id).unwrap();
+                    let b = issues.issues.get(*b_id).unwrap();
+                    a.timestamp.cmp(&b.timestamp)
+                });
+                println!("{:?}:", state);
+                for uuid in these_uuids {
+                    let issue = issues.issues.get(*uuid).unwrap();
+                    let comments = match issue.comments.len() {
+                        0 => String::from("   "),
+                        n => format!("🗩 {}", n),
+                    };
+                    let assignee = match &issue.assignee {
+                        Some(assignee) => format!(" (👉 {})", assignee),
+                        None => String::from(""),
+                    };
+                    println!("{}  {}  {}{}", uuid, comments, issue.title(), assignee);
+                }
+                println!("");
             }
         }
 
@@ -106,15 +153,21 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             match issues.get_issue(issue_id) {
                 Some(issue) => {
                     println!("issue {}", issue_id);
+                    println!("author: {}", issue.author);
+                    println!("timestamp: {}", issue.timestamp);
                     println!("state: {:?}", issue.state);
                     if let Some(dependencies) = &issue.dependencies {
                         println!("dependencies: {:?}", dependencies);
+                    }
+                    if let Some(assignee) = &issue.assignee {
+                        println!("assignee: {}", assignee);
                     }
                     println!("");
                     println!("{}", issue.description);
                     for comment in &issue.comments {
                         println!("");
                         println!("comment: {}", comment.uuid);
+                        println!("author: {}", comment.author);
                         println!("timestamp: {}", comment.timestamp);
                         println!("{}", comment.description);
                     }
@@ -189,6 +242,37 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             };
             entomologist::git::sync(issues_dir, remote, branch)?;
             println!("synced {:?} with {:?}", branch, remote);
+        }
+
+        Commands::Assign {
+            issue_id,
+            new_assignee,
+        } => {
+            let mut issues =
+                entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
+            let Some(issue) = issues.issues.get_mut(issue_id) else {
+                return Err(anyhow::anyhow!("issue {} not found", issue_id));
+            };
+            match (&issue.assignee, new_assignee) {
+                (Some(old_assignee), Some(new_assignee)) => {
+                    println!("issue: {}", issue_id);
+                    println!("assignee: {} -> {}", old_assignee, new_assignee);
+                    issue.set_assignee(new_assignee)?;
+                }
+                (Some(old_assignee), None) => {
+                    println!("issue: {}", issue_id);
+                    println!("assignee: {}", old_assignee);
+                }
+                (None, Some(new_assignee)) => {
+                    println!("issue: {}", issue_id);
+                    println!("assignee: None -> {}", new_assignee);
+                    issue.set_assignee(new_assignee)?;
+                }
+                (None, None) => {
+                    println!("issue: {}", issue_id);
+                    println!("assignee: None");
+                }
+            }
         }
     }
 

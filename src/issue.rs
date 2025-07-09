@@ -20,9 +20,12 @@ pub type IssueHandle = String;
 
 #[derive(Debug, PartialEq)]
 pub struct Issue {
-    pub description: String,
+    pub author: String,
+    pub timestamp: chrono::DateTime<chrono::Local>,
     pub state: State,
     pub dependencies: Option<Vec<IssueHandle>>,
+    pub assignee: Option<String>,
+    pub description: String,
     pub comments: Vec<crate::comment::Comment>,
 
     /// This is the directory that the issue lives in.  Only used
@@ -88,6 +91,7 @@ impl Issue {
         let mut state = State::New; // default state, if not specified in the issue
         let mut dependencies: Option<Vec<String>> = None;
         let mut comments = Vec::<crate::comment::Comment>::new();
+        let mut assignee: Option<String> = None;
 
         for direntry in dir.read_dir()? {
             if let Ok(direntry) = direntry {
@@ -97,6 +101,10 @@ impl Issue {
                 } else if file_name == "state" {
                     let state_string = std::fs::read_to_string(direntry.path())?;
                     state = State::from_str(state_string.trim())?;
+                } else if file_name == "assignee" {
+                    assignee = Some(String::from(
+                        std::fs::read_to_string(direntry.path())?.trim(),
+                    ));
                 } else if file_name == "dependencies" {
                     let dep_strings = std::fs::read_to_string(direntry.path())?;
                     let deps: Vec<IssueHandle> = dep_strings
@@ -119,10 +127,16 @@ impl Issue {
             return Err(IssueError::IssueParseError);
         }
 
+        let author = crate::git::git_log_oldest_author(dir)?;
+        let timestamp = crate::git::git_log_oldest_timestamp(dir)?;
+
         Ok(Self {
-            description: description.unwrap(),
+            author,
+            timestamp,
             state: state,
             dependencies,
+            assignee,
+            description: description.unwrap(),
             comments,
             dir: std::path::PathBuf::from(dir),
         })
@@ -156,6 +170,7 @@ impl Issue {
 
         Ok(crate::comment::Comment {
             uuid,
+            author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
             timestamp: chrono::Local::now(),
             description: String::from(""), // FIXME
             dir,
@@ -168,9 +183,12 @@ impl Issue {
         issue_dir.push(&format!("{:032x}", rnd));
         std::fs::create_dir(&issue_dir)?;
         Ok(Self {
-            description: String::from(""), // FIXME: kind of bogus to use the empty string as None
+            author: String::from(""),
+            timestamp: chrono::Local::now(),
             state: State::New,
             dependencies: None,
+            assignee: None,
+            description: String::from(""), // FIXME: kind of bogus to use the empty string as None
             comments: Vec::<crate::comment::Comment>::new(),
             dir: issue_dir,
         })
@@ -233,6 +251,15 @@ impl Issue {
         self.state = State::from_str(state_string.trim())?;
         Ok(())
     }
+
+    pub fn set_assignee(&mut self, new_assignee: &str) -> Result<(), IssueError> {
+        let mut assignee_filename = std::path::PathBuf::from(&self.dir);
+        assignee_filename.push("assignee");
+        let mut assignee_file = std::fs::File::create(&assignee_filename)?;
+        write!(assignee_file, "{}", new_assignee)?;
+        crate::git::git_commit_file(&assignee_filename)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -244,9 +271,14 @@ mod tests {
         let issue_dir = std::path::Path::new("test/0000/3943fc5c173fdf41c0a22251593cd476d96e6c9f/");
         let issue = Issue::new_from_dir(issue_dir).unwrap();
         let expected = Issue {
-            description: String::from("this is the title of my issue\n\nThis is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n"),
+            author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
+            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+                .unwrap()
+                .with_timezone(&chrono::Local),
             state: State::New,
             dependencies: None,
+            assignee: None,
+            description: String::from("this is the title of my issue\n\nThis is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n"),
             comments: Vec::<crate::comment::Comment>::new(),
             dir: std::path::PathBuf::from(issue_dir),
         };
@@ -258,9 +290,14 @@ mod tests {
         let issue_dir = std::path::Path::new("test/0000/7792b063eef6d33e7da5dc1856750c149ba678c6/");
         let issue = Issue::new_from_dir(issue_dir).unwrap();
         let expected = Issue {
-            description: String::from("minimal"),
+            author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
+            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+                .unwrap()
+                .with_timezone(&chrono::Local),
             state: State::InProgress,
             dependencies: None,
+            assignee: Some(String::from("beep boop")),
+            description: String::from("minimal"),
             comments: Vec::<crate::comment::Comment>::new(),
             dir: std::path::PathBuf::from(issue_dir),
         };
