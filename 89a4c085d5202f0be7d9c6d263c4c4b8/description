@@ -1,0 +1,3 @@
+manage whitespace in issues and comments
+
+Strip leading and trailing whitespace when loading and saving descriptions.
