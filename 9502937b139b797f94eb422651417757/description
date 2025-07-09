@@ -1,0 +1,13 @@
+visually distinguish issues and comments from each other
+
+`git log` does it well:
+
+* The first line of each commit (that says `commit SHA`) is in a
+  different color
+
+* The commit message is indented, making it visually distinctive from
+  the commit header which is not indented
+
+* There's a blank line after each commit, before the next one starts
+
+Something similar in `ent show` would be good.
