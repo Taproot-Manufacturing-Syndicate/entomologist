@@ -120,7 +120,7 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                     let issue = issues.issues.get(*uuid).unwrap();
                     let comments = match issue.comments.len() {
                         0 => String::from("   "),
-                        n => format!("🗩 {}", n),
+                        n => format!("🗨️ {}", n),
                     };
                     let assignee = match &issue.assignee {
                         Some(assignee) => format!(" (👉 {})", assignee),
