@@ -1,1 +1,8 @@
 commit messages in the `entomologist-data` branch could be better
+
+It'd be nice to be able to look at the `git log --oneline` of an issue dir and see:
+* creating the issue
+* editing the issue
+* changing state or assignee
+* adding a comment
+* editing a comment
