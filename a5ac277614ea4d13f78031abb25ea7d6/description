@@ -1,0 +1,7 @@
+`ent new` and `ent comment`: detect empty issue descriptions & comments
+
+If the user changes their mind and saves an empty file, don't make a
+new empty comment.
+
+For an embarrassing example, see comment 9e81dce91164a3ee26c3214ee2d9d809
+on issue 75cefad80aacbf23fc7b9c24a75aa236.

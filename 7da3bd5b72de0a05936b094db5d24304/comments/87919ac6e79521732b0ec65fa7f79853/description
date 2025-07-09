@@ -1,0 +1,2 @@
+I think this will be easy.  We'll teach `ent edit ID` to search not only
+issue IDs but also comment IDs, then reuse the existing edit code.

@@ -1,0 +1,7 @@
+`ent sync`, ^C, now there's a stray worktree
+
+The worktree has the `entomologist-data` branch checked out in it,
+so ent won't make another.
+
+Probably want a crash handler in `ent` to clean up any worktree we
+have open.
