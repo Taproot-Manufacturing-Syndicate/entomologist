@@ -1,6 +1,20 @@
-add some way to un-assign an issue
+make issue assignment more flexible
 
-This will probably involve removing the `assignee` file from the issue
-directory, which will mean teaching the git code about removed files.
+I think there are two things i want that don't currently work:
+* add some way to un-assign a person from an issue
+* support multiple people assigned to the same issue
 
-Or maybe write the empty string to that file?
+Maybe the `assignee` field of the Issue struct should be a Vec<String>
+instead of String?  And the `assignee` file of the issue directory should
+be a list, one assignee per line?
+
+Possible new CLI ui:
+
+* `ent assign ISSUE PERSON[,PERSON...]` replaces the `assignee` list
+  with the new user-specified list.
+* `ent assign ISSUE +PERSON` adds PERSON to the list
+* `ent assign ISSUE -PERSON` removes the PERSON from the list
+
+Also support removing the `assignee` file from the issue directory if the
+list is empty.  Or maybe allow the file to exist but with 0 bytes in it?
+Probably either one is fine.
