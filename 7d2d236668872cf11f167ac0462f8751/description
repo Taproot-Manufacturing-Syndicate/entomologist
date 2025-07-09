@@ -1,0 +1,13 @@
+add `ent tag ISSUE_ID TAG`
+
+Tags are short text strings without white space.
+
+The Issue directory will gain a file named `tags`, containing the sorted
+list of tags.
+
+The `ent list` output will add a bit to the end of each issue displayed,
+something like "[tag1, tag2]", or nothing if the issue has no tags
+(like how we don't show assignee if there is none).
+
+As part of this issue, the `ent list FILTER` will gain a new filter
+chunk type like "tags=v2.31,ux-papercut".
