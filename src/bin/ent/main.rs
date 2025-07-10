@@ -150,9 +150,16 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             let mut issues =
                 entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
             match issues.get_mut_issue(issue_id) {
-                Some(issue) => {
-                    issue.edit_description()?;
-                }
+                Some(issue) => match issue.edit_description() {
+                    Err(entomologist::issue::IssueError::EmptyDescription) => {
+                        println!("aborted issue edit");
+                        return Ok(());
+                    }
+                    Err(e) => {
+                        return Err(e.into());
+                    }
+                    Ok(()) => (),
+                },
                 None => {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 }
