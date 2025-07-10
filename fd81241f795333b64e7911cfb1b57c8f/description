@@ -6,3 +6,6 @@ It'd be nice to be able to look at the `git log --oneline` of an issue dir and s
 * changing state or assignee
 * adding a comment
 * editing a comment
+
+I think each kind of log message we want will correspond to a matching
+API function in the entomologist crate.
