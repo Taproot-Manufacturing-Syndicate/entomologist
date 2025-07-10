@@ -143,6 +143,19 @@ pub fn restore_file(file: &std::path::Path) -> Result<(), GitError> {
     return Ok(());
 }
 
+pub fn commit(dir: &std::path::Path, msg: &str) -> Result<(), GitError> {
+    let result = std::process::Command::new("git")
+        .args(["commit", "-m", msg])
+        .current_dir(dir)
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+    Ok(())
+}
+
 pub fn git_commit_file(file: &std::path::Path) -> Result<(), GitError> {
     let mut git_dir = std::path::PathBuf::from(file);
     git_dir.pop();
