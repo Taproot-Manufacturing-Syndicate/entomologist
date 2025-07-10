@@ -132,18 +132,24 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             }
         }
 
-        Commands::New {
-            description: Some(description),
-        } => {
+        Commands::New { description } => {
             let mut issue = entomologist::issue::Issue::new(issues_dir)?;
-            issue.set_description(description)?;
-            println!("created new issue '{}'", issue.title());
-        }
-
-        Commands::New { description: None } => {
-            let mut issue = entomologist::issue::Issue::new(issues_dir)?;
-            issue.edit_description()?;
-            println!("created new issue '{}'", issue.title());
+            let r = match description {
+                Some(description) => issue.set_description(description),
+                None => issue.edit_description(),
+            };
+            match r {
+                Err(entomologist::issue::IssueError::EmptyDescription) => {
+                    println!("no new issue created");
+                    return Ok(());
+                }
+                Err(e) => {
+                    return Err(e.into());
+                }
+                Ok(()) => {
+                    println!("created new issue '{}'", issue.title());
+                }
+            }
         }
 
         Commands::Edit { issue_id } => {
