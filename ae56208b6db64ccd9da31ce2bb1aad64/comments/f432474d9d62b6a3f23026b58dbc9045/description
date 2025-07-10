@@ -1,0 +1,4 @@
+There was a bug in entomologist::git::Worktree::drop() which would make
+it fail to clean up the worktree if it was dirty.
+
+This was fixed in commit ca353352f8dced335506ffb4bd839213b64afefb.
