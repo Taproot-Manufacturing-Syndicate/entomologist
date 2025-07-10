@@ -106,6 +106,17 @@ pub fn git_branch_exists(branch: &str) -> Result<bool, GitError> {
     return Ok(result.status.success());
 }
 
+pub fn worktree_is_dirty(dir: &str) -> Result<bool, GitError> {
+    // `git status --porcelain` prints a terse list of files added or
+    // modified (both staged and not), and new untracked files.  So if
+    // says *anything at all* it means the worktree is dirty.
+    let result = std::process::Command::new("git")
+        .args(["status", "--porcelain", "--untracked-files=no"])
+        .current_dir(dir)
+        .output()?;
+    return Ok(result.stdout.len() > 0);
+}
+
 pub fn git_commit_file(file: &std::path::Path) -> Result<(), GitError> {
     let mut git_dir = std::path::PathBuf::from(file);
     git_dir.pop();
