@@ -1,0 +1,6 @@
+While many "stray worktree" bugs got fixed by commit
+ca353352f8dced335506ffb4bd839213b64afefb, the case of Control-C still
+leaves a stray worktree behind because it doesn't shut down the process
+cleanly, so `Worktree::drop()` doesn't get run.
+
+Not sure what the best way to fix this is.
