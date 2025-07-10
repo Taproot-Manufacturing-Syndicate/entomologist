@@ -20,9 +20,24 @@ pub struct Worktree {
 
 impl Drop for Worktree {
     fn drop(&mut self) {
-        let _result = std::process::Command::new("git")
-            .args(["worktree", "remove", &self.path.path().to_string_lossy()])
+        let result = std::process::Command::new("git")
+            .args([
+                "worktree",
+                "remove",
+                "--force",
+                &self.path.path().to_string_lossy(),
+            ])
             .output();
+        match result {
+            Err(e) => {
+                println!("failed to run git: {:#?}", e);
+            }
+            Ok(result) => {
+                if !result.status.success() {
+                    println!("failed to remove git worktree: {:#?}", result);
+                }
+            }
+        }
     }
 }
 
@@ -89,6 +104,56 @@ pub fn git_branch_exists(branch: &str) -> Result<bool, GitError> {
         .args(["show-ref", "--quiet", branch])
         .output()?;
     return Ok(result.status.success());
+}
+
+pub fn worktree_is_dirty(dir: &str) -> Result<bool, GitError> {
+    // `git status --porcelain` prints a terse list of files added or
+    // modified (both staged and not), and new untracked files.  So if
+    // says *anything at all* it means the worktree is dirty.
+    let result = std::process::Command::new("git")
+        .args(["status", "--porcelain", "--untracked-files=no"])
+        .current_dir(dir)
+        .output()?;
+    return Ok(result.stdout.len() > 0);
+}
+
+pub fn add_file(file: &std::path::Path) -> Result<(), GitError> {
+    let result = std::process::Command::new("git")
+        .args(["add", &file.to_string_lossy()])
+        .current_dir(file.parent().unwrap())
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+    return Ok(());
+}
+
+pub fn restore_file(file: &std::path::Path) -> Result<(), GitError> {
+    let result = std::process::Command::new("git")
+        .args(["restore", &file.to_string_lossy()])
+        .current_dir(file.parent().unwrap())
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+    return Ok(());
+}
+
+pub fn commit(dir: &std::path::Path, msg: &str) -> Result<(), GitError> {
+    let result = std::process::Command::new("git")
+        .args(["commit", "-m", msg])
+        .current_dir(dir)
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+    Ok(())
 }
 
 pub fn git_commit_file(file: &std::path::Path) -> Result<(), GitError> {

@@ -132,27 +132,40 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
             }
         }
 
-        Commands::New {
-            description: Some(description),
-        } => {
+        Commands::New { description } => {
             let mut issue = entomologist::issue::Issue::new(issues_dir)?;
-            issue.set_description(description)?;
-            println!("created new issue '{}'", issue.title());
-        }
-
-        Commands::New { description: None } => {
-            let mut issue = entomologist::issue::Issue::new(issues_dir)?;
-            issue.edit_description()?;
-            println!("created new issue '{}'", issue.title());
+            let r = match description {
+                Some(description) => issue.set_description(description),
+                None => issue.edit_description(),
+            };
+            match r {
+                Err(entomologist::issue::IssueError::EmptyDescription) => {
+                    println!("no new issue created");
+                    return Ok(());
+                }
+                Err(e) => {
+                    return Err(e.into());
+                }
+                Ok(()) => {
+                    println!("created new issue '{}'", issue.title());
+                }
+            }
         }
 
         Commands::Edit { issue_id } => {
             let mut issues =
                 entomologist::issues::Issues::new_from_dir(std::path::Path::new(issues_dir))?;
             match issues.get_mut_issue(issue_id) {
-                Some(issue) => {
-                    issue.edit_description()?;
-                }
+                Some(issue) => match issue.edit_description() {
+                    Err(entomologist::issue::IssueError::EmptyDescription) => {
+                        println!("aborted issue edit");
+                        return Ok(());
+                    }
+                    Err(e) => {
+                        return Err(e.into());
+                    }
+                    Ok(()) => (),
+                },
                 None => {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 }
@@ -227,12 +240,20 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                 return Err(anyhow::anyhow!("issue {} not found", issue_id));
             };
             let mut comment = issue.new_comment()?;
-            match description {
-                Some(description) => {
-                    comment.set_description(description)?;
+            let r = match description {
+                Some(description) => comment.set_description(description),
+                None => comment.edit_description(),
+            };
+            match r {
+                Err(entomologist::comment::CommentError::EmptyDescription) => {
+                    println!("aborted new comment");
+                    return Ok(());
                 }
-                None => {
-                    comment.edit_description()?;
+                Err(e) => {
+                    return Err(e.into());
+                }
+                Ok(()) => {
+                    println!("created new comment {}", &comment.uuid);
                 }
             }
         }
