@@ -1,0 +1,5 @@
+It's easy to make worktrees with detached heads:
+```
+$ git worktree add --detach /tmp/ent1 entomologist-data
+$ git worktree add --detach /tmp/ent2 entomologist-data
+```
