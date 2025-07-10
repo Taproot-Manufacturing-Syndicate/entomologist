@@ -194,6 +194,7 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                         println!("comment: {}", comment.uuid);
                         println!("author: {}", comment.author);
                         println!("timestamp: {}", comment.timestamp);
+                        println!("");
                         println!("{}", comment.description);
                     }
                 }
