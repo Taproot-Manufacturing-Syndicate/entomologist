@@ -14,5 +14,6 @@ I think after (1), before (2), we can do some easy, partially useful things:
 2. Show what the remote has that we don't have locally:
     `git log -p origin/entomologist-data ^entomologist-data `
 
-Eventually (maybe after issue 5fe71e27727f4243dc997e63b9a02971) we can
-display the changes in a simpler way.
+Eventually (maybe after issue 5fe71e27727f4243dc997e63b9a02971 and/or
+issue fd81241f795333b64e7911cfb1b57c8f) we can display the changes in
+a simpler way.
