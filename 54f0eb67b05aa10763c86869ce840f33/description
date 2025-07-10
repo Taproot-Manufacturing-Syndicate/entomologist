@@ -1,1 +1,18 @@
-`ent sync` should report what changes got fetched & pushed
+`ent sync` should report what changes got fetched & what changes will be pushed
+
+Currently `ent sync` does:
+
+1. `git fetch origin`
+2. `git merge origin/entomologist-data`
+3. `git push origin entomologist-data`
+
+I think after (1), before (2), we can do some easy, partially useful things:
+
+1. Show what we have locally that's not on the remote yet:
+    `git log -p entomologist-data ^origin/entomologist-data`
+
+2. Show what the remote has that we don't have locally:
+    `git log -p origin/entomologist-data ^entomologist-data `
+
+Eventually (maybe after issue 5fe71e27727f4243dc997e63b9a02971) we can
+display the changes in a simpler way.
