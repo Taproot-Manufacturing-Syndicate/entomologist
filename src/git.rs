@@ -233,6 +233,62 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
 
     git_fetch(dir, remote)?;
 
+    // FIXME: Possible things to add:
+    // * `git log -p` shows diff
+    // * `git log --numstat` shows machine-readable diffstat
+
+    // Show what we just fetched from the remote.
+    let result = std::process::Command::new("git")
+        .args([
+            "log",
+            "--no-merges",
+            "--pretty=format:%an: %s",
+            &format!("{}/{}", remote, branch),
+            &format!("^{}", branch),
+        ])
+        .current_dir(dir)
+        .output()?;
+    if !result.status.success() {
+        println!(
+            "Sync failed!  'git log' error!  Help, a human needs to fix the mess in {:?}",
+            dir
+        );
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+    if result.stdout.len() > 0 {
+        println!("Changes fetched from remote {}:", remote);
+        println!("{}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("");
+    }
+
+    // Show what we are about to push to the remote.
+    let result = std::process::Command::new("git")
+        .args([
+            "log",
+            "--no-merges",
+            "--pretty=format:%an: %s",
+            &format!("{}", branch),
+            &format!("^{}/{}", remote, branch),
+        ])
+        .current_dir(dir)
+        .output()?;
+    if !result.status.success() {
+        println!(
+            "Sync failed!  'git log' error!  Help, a human needs to fix the mess in {:?}",
+            dir
+        );
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+    if result.stdout.len() > 0 {
+        println!("Changes to push to remote {}:", remote);
+        println!("{}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("");
+    }
+
     // Merge remote branch into local.
     let result = std::process::Command::new("git")
         .args(["merge", &format!("{}/{}", remote, branch)])
