@@ -1,0 +1,2 @@
+This will probably require `struct Issue` to incorporate the issue uuid,
+like `struct Comment` does.
