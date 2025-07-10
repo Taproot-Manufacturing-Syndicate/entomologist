@@ -20,9 +20,24 @@ pub struct Worktree {
 
 impl Drop for Worktree {
     fn drop(&mut self) {
-        let _result = std::process::Command::new("git")
-            .args(["worktree", "remove", &self.path.path().to_string_lossy()])
+        let result = std::process::Command::new("git")
+            .args([
+                "worktree",
+                "remove",
+                "--force",
+                &self.path.path().to_string_lossy(),
+            ])
             .output();
+        match result {
+            Err(e) => {
+                println!("failed to run git: {:#?}", e);
+            }
+            Ok(result) => {
+                if !result.status.success() {
+                    println!("failed to remove git worktree: {:#?}", result);
+                }
+            }
+        }
     }
 }
 
