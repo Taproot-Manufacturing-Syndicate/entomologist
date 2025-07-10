@@ -117,6 +117,19 @@ pub fn worktree_is_dirty(dir: &str) -> Result<bool, GitError> {
     return Ok(result.stdout.len() > 0);
 }
 
+pub fn add_file(file: &std::path::Path) -> Result<(), GitError> {
+    let result = std::process::Command::new("git")
+        .args(["add", &file.to_string_lossy()])
+        .current_dir(file.parent().unwrap())
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        return Err(GitError::Oops);
+    }
+    return Ok(());
+}
+
 pub fn restore_file(file: &std::path::Path) -> Result<(), GitError> {
     let result = std::process::Command::new("git")
         .args(["restore", &file.to_string_lossy()])
