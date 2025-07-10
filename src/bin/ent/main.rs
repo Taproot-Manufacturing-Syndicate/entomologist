@@ -234,12 +234,20 @@ fn handle_command(args: &Args, issues_dir: &std::path::Path) -> anyhow::Result<(
                 return Err(anyhow::anyhow!("issue {} not found", issue_id));
             };
             let mut comment = issue.new_comment()?;
-            match description {
-                Some(description) => {
-                    comment.set_description(description)?;
+            let r = match description {
+                Some(description) => comment.set_description(description),
+                None => comment.edit_description(),
+            };
+            match r {
+                Err(entomologist::comment::CommentError::EmptyDescription) => {
+                    println!("aborted new comment");
+                    return Ok(());
                 }
-                None => {
-                    comment.edit_description()?;
+                Err(e) => {
+                    return Err(e.into());
+                }
+                Ok(()) => {
+                    println!("created new comment {}", &comment.uuid);
                 }
             }
         }
