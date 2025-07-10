@@ -22,6 +22,8 @@ pub enum CommentError {
     GitError(#[from] crate::git::GitError),
     #[error("Failed to run editor")]
     EditorError,
+    #[error("supplied description is empty")]
+    EmptyDescription,
 }
 
 impl Comment {
@@ -60,6 +62,9 @@ impl Comment {
     }
 
     pub fn set_description(&mut self, description: &str) -> Result<(), CommentError> {
+        if description.len() == 0 {
+            return Err(CommentError::EmptyDescription);
+        }
         self.description = String::from(description);
         let mut description_filename = std::path::PathBuf::from(&self.dir);
         description_filename.push("description");
@@ -79,6 +84,7 @@ impl Comment {
     pub fn edit_description(&mut self) -> Result<(), CommentError> {
         let mut description_filename = std::path::PathBuf::from(&self.dir);
         description_filename.push("description");
+        let exists = description_filename.exists();
         let result = std::process::Command::new("vi")
             .arg(&description_filename.as_mut_os_str())
             .spawn()?
@@ -88,8 +94,31 @@ impl Comment {
             println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
             return Err(CommentError::EditorError);
         }
-        crate::git::git_commit_file(&description_filename)?;
-        self.read_description()?;
+        if description_filename.exists() && description_filename.metadata()?.len() > 0 {
+            crate::git::add_file(&description_filename)?;
+        } else {
+            // User saved an empty file, which means they changed their
+            // mind and no longer want to edit the description.
+            if exists {
+                crate::git::restore_file(&description_filename)?;
+            }
+            return Err(CommentError::EmptyDescription);
+        }
+        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
+            crate::git::commit(
+                &description_filename.parent().unwrap(),
+                &format!(
+                    "new description for comment {}",
+                    description_filename
+                        .parent()
+                        .unwrap()
+                        .file_name()
+                        .unwrap()
+                        .to_string_lossy()
+                ),
+            )?;
+            self.read_description()?;
+        }
         Ok(())
     }
 }
