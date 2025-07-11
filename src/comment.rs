@@ -16,6 +16,8 @@ pub struct Comment {
 pub enum CommentError {
     #[error(transparent)]
     StdIoError(#[from] std::io::Error),
+    #[error(transparent)]
+    EnvVarError(#[from] std::env::VarError),
     #[error("Failed to parse comment")]
     CommentParseError,
     #[error("Failed to run git")]
@@ -61,17 +63,56 @@ impl Comment {
         })
     }
 
-    pub fn set_description(&mut self, description: &str) -> Result<(), CommentError> {
-        if description.len() == 0 {
-            return Err(CommentError::EmptyDescription);
+    /// Create a new Comment on the specified Issue.  Commits.
+    pub fn new(
+        issue: &crate::issue::Issue,
+        description: &Option<String>,
+    ) -> Result<crate::comment::Comment, CommentError> {
+        let mut dir = std::path::PathBuf::from(&issue.dir);
+        dir.push("comments");
+        if !dir.exists() {
+            std::fs::create_dir(&dir)?;
         }
-        self.description = String::from(description);
-        let mut description_filename = std::path::PathBuf::from(&self.dir);
-        description_filename.push("description");
-        let mut description_file = std::fs::File::create(&description_filename)?;
-        write!(description_file, "{}", description)?;
-        crate::git::git_commit_file(&description_filename)?;
-        Ok(())
+
+        let rnd: u128 = rand::random();
+        let uuid = format!("{:032x}", rnd);
+        dir.push(&uuid);
+        std::fs::create_dir(&dir)?;
+
+        let mut comment = crate::comment::Comment {
+            uuid,
+            author: String::from(""), // this will be updated from git when we re-read this comment
+            timestamp: chrono::Local::now(),
+            description: String::from(""), // this will be set immediately below
+            dir: dir.clone(),
+        };
+
+        match description {
+            Some(description) => {
+                if description.len() == 0 {
+                    return Err(CommentError::EmptyDescription);
+                }
+                comment.description = String::from(description);
+                let description_filename = comment.description_filename();
+                let mut description_file = std::fs::File::create(&description_filename)?;
+                write!(description_file, "{}", description)?;
+            }
+            None => comment.edit_description_file()?,
+        };
+
+        crate::git::add(&dir)?;
+        if crate::git::worktree_is_dirty(&dir.to_string_lossy())? {
+            crate::git::commit(
+                &dir,
+                &format!(
+                    "add comment {} on issue {}",
+                    comment.uuid,
+                    issue.dir.file_name().unwrap().to_string_lossy(),
+                ),
+            )?;
+        }
+
+        Ok(comment)
     }
 
     pub fn read_description(&mut self) -> Result<(), CommentError> {
@@ -82,11 +123,39 @@ impl Comment {
     }
 
     pub fn edit_description(&mut self) -> Result<(), CommentError> {
-        let mut description_filename = std::path::PathBuf::from(&self.dir);
-        description_filename.push("description");
+        self.edit_description_file()?;
+        let description_filename = self.description_filename();
+        crate::git::add(&description_filename)?;
+        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
+            crate::git::commit(
+                &description_filename.parent().unwrap(),
+                &format!(
+                    "edit comment {} on issue FIXME", // FIXME: name the issue that the comment is on
+                    self.dir.file_name().unwrap().to_string_lossy()
+                ),
+            )?;
+            self.read_description()?;
+        }
+        Ok(())
+    }
+
+    /// Opens the Comment's `description` file in an editor.  Validates
+    /// the editor's exit code.  Updates the Comment's internal
+    /// description from what the user saved in the file.
+    ///
+    /// Used by Issue::add_comment() when no description is supplied,
+    /// and (FIXME: in the future) used by `ent edit COMMENT`.
+    pub fn edit_description_file(&mut self) -> Result<(), CommentError> {
+        let description_filename = self.description_filename();
         let exists = description_filename.exists();
-        let result = std::process::Command::new("vi")
-            .arg(&description_filename.as_mut_os_str())
+
+        let editor = match std::env::var("EDITOR") {
+            Ok(editor) => editor,
+            Err(std::env::VarError::NotPresent) => String::from("vi"),
+            Err(e) => return Err(e.into()),
+        };
+        let result = std::process::Command::new(editor)
+            .arg(&description_filename.as_os_str())
             .spawn()?
             .wait_with_output()?;
         if !result.status.success() {
@@ -94,9 +163,8 @@ impl Comment {
             println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
             return Err(CommentError::EditorError);
         }
-        if description_filename.exists() && description_filename.metadata()?.len() > 0 {
-            crate::git::add(&description_filename)?;
-        } else {
+
+        if !description_filename.exists() || description_filename.metadata()?.len() == 0 {
             // User saved an empty file, which means they changed their
             // mind and no longer want to edit the description.
             if exists {
@@ -104,22 +172,17 @@ impl Comment {
             }
             return Err(CommentError::EmptyDescription);
         }
-        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
-            crate::git::commit(
-                &description_filename.parent().unwrap(),
-                &format!(
-                    "new description for comment {}",
-                    description_filename
-                        .parent()
-                        .unwrap()
-                        .file_name()
-                        .unwrap()
-                        .to_string_lossy()
-                ),
-            )?;
-            self.read_description()?;
-        }
+        self.read_description()?;
         Ok(())
+    }
+}
+
+// This is the private, internal API.
+impl Comment {
+    fn description_filename(&self) -> std::path::PathBuf {
+        let mut description_filename = std::path::PathBuf::from(&self.dir);
+        description_filename.push("description");
+        description_filename
     }
 }
 

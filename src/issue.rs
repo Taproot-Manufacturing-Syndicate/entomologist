@@ -161,25 +161,13 @@ impl Issue {
         Ok(())
     }
 
-    pub fn new_comment(&mut self) -> Result<crate::comment::Comment, IssueError> {
-        let mut dir = std::path::PathBuf::from(&self.dir);
-        dir.push("comments");
-        if !dir.exists() {
-            std::fs::create_dir(&dir)?;
-        }
-
-        let rnd: u128 = rand::random();
-        let uuid = format!("{:032x}", rnd);
-        dir.push(&uuid);
-        std::fs::create_dir(&dir)?;
-
-        Ok(crate::comment::Comment {
-            uuid,
-            author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            timestamp: chrono::Local::now(),
-            description: String::from(""), // FIXME
-            dir,
-        })
+    /// Add a new Comment to the Issue.  Commits.
+    pub fn add_comment(
+        &mut self,
+        description: &Option<String>,
+    ) -> Result<crate::comment::Comment, IssueError> {
+        let comment = crate::comment::Comment::new(self, description)?;
+        Ok(comment)
     }
 
     /// Create a new Issue in an Issues database specified by a directory.

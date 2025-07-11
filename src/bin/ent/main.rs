@@ -327,21 +327,21 @@ fn handle_command(
             let Some(issue) = issues.get_mut_issue(issue_id) else {
                 return Err(anyhow::anyhow!("issue {} not found", issue_id));
             };
-            let mut comment = issue.new_comment()?;
-            let r = match description {
-                Some(description) => comment.set_description(description),
-                None => comment.edit_description(),
-            };
-            match r {
-                Err(entomologist::comment::CommentError::EmptyDescription) => {
+            match issue.add_comment(description) {
+                Err(entomologist::issue::IssueError::CommentError(
+                    entomologist::comment::CommentError::EmptyDescription,
+                )) => {
                     println!("aborted new comment");
                     return Ok(());
                 }
                 Err(e) => {
                     return Err(e.into());
                 }
-                Ok(()) => {
-                    println!("created new comment {}", &comment.uuid);
+                Ok(comment) => {
+                    println!(
+                        "created new comment {} on issue {}",
+                        &comment.uuid, &issue_id
+                    );
                 }
             }
         }
