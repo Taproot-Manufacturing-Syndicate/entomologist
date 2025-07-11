@@ -102,6 +102,7 @@ impl fmt::Display for State {
 
 // This is the public API of Issue.
 impl Issue {
+    // ?
     pub fn new_from_dir(dir: &std::path::Path) -> Result<Self, IssueError> {
         let mut description: Option<String> = None;
         let mut state = State::New; // default state, if not specified in the issue
@@ -185,6 +186,7 @@ impl Issue {
         })
     }
 
+    // ?
     fn read_comments(
         comments: &mut Vec<crate::comment::Comment>,
         dir: &std::path::Path,
@@ -306,6 +308,7 @@ impl Issue {
         Ok(())
     }
 
+    // ?
     pub fn read_state(&mut self) -> Result<(), IssueError> {
         let mut state_filename = std::path::PathBuf::from(&self.dir);
         state_filename.push("state");
