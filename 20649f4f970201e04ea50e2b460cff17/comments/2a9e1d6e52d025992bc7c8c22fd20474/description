@@ -1,0 +1,8 @@
+Oops, i stupidly ran: ent new "add `ent sync --dry-run`"
+
+Because i used double-quotes, bash saw the `...` and ran that as a
+command, which failed, but then bash ran the result anyway ("ent new
+"add "), and here we are.
+
+This would be a good time for `ent rm` as suggested by issue
+1ebdee0502937bf934bb0d72256dbdd1.
