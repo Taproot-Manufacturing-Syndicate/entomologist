@@ -216,12 +216,7 @@ fn handle_command(
         Commands::New { description } => {
             let issues_database =
                 make_issues_database(issues_database_source, IssuesDatabaseAccess::ReadWrite)?;
-            let mut issue = entomologist::issue::Issue::new(&issues_database.dir)?;
-            let r = match description {
-                Some(description) => issue.set_description(description),
-                None => issue.edit_description(),
-            };
-            match r {
+            match entomologist::issue::Issue::new(&issues_database.dir, description) {
                 Err(entomologist::issue::IssueError::EmptyDescription) => {
                     println!("no new issue created");
                     return Ok(());
@@ -229,7 +224,7 @@ fn handle_command(
                 Err(e) => {
                     return Err(e.into());
                 }
-                Ok(()) => {
+                Ok(issue) => {
                     println!("created new issue '{}'", issue.title());
                     return Ok(());
                 }
