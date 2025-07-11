@@ -32,8 +32,8 @@ enum Commands {
     /// Create a new issue.
     New { description: Option<String> },
 
-    /// Edit the description of an issue.
-    Edit { issue_id: String },
+    /// Edit the description of an Issue or a Comment.
+    Edit { uuid: String },
 
     /// Show the full description of an issue.
     Show { issue_id: String },
@@ -231,25 +231,39 @@ fn handle_command(
             }
         }
 
-        Commands::Edit { issue_id } => {
+        Commands::Edit { uuid } => {
             let issues_database =
                 make_issues_database(issues_database_source, IssuesDatabaseAccess::ReadWrite)?;
             let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
-            match issues.get_mut_issue(issue_id) {
-                Some(issue) => match issue.edit_description() {
+            if let Some(issue) = issues.get_mut_issue(uuid) {
+                match issue.edit_description() {
                     Err(entomologist::issue::IssueError::EmptyDescription) => {
                         println!("aborted issue edit");
                         return Ok(());
                     }
-                    Err(e) => {
-                        return Err(e.into());
-                    }
-                    Ok(()) => (),
-                },
-                None => {
-                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                    Err(e) => return Err(e.into()),
+                    Ok(()) => return Ok(()),
                 }
             }
+            // No issue by that ID, check all the comments.
+            for (_, issue) in issues.issues.iter_mut() {
+                for comment in issue.comments.iter_mut() {
+                    if comment.uuid == *uuid {
+                        match comment.edit_description() {
+                            Err(entomologist::comment::CommentError::EmptyDescription) => {
+                                println!("aborted comment edit");
+                                return Ok(());
+                            }
+                            Err(e) => return Err(e.into()),
+                            Ok(()) => return Ok(()),
+                        }
+                    }
+                }
+            }
+            return Err(anyhow::anyhow!(
+                "no issue or comment with uuid {} found",
+                uuid
+            ));
         }
 
         Commands::Show { issue_id } => {
