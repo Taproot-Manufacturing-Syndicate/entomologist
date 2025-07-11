@@ -55,6 +55,25 @@ impl Worktree {
         Ok(Self { path })
     }
 
+    pub fn new_detached(branch: &str) -> Result<Worktree, GitError> {
+        let path = tempfile::tempdir()?;
+        let result = std::process::Command::new("git")
+            .args([
+                "worktree",
+                "add",
+                "--detach",
+                &path.path().to_string_lossy(),
+                branch,
+            ])
+            .output()?;
+        if !result.status.success() {
+            println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+            println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+            return Err(GitError::Oops);
+        }
+        Ok(Self { path })
+    }
+
     pub fn path(&self) -> &std::path::Path {
         self.path.as_ref()
     }
