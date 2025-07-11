@@ -230,7 +230,7 @@ impl Issue {
             return Err(IssueError::EditorError);
         }
         if description_filename.exists() && description_filename.metadata()?.len() > 0 {
-            crate::git::add_file(&description_filename)?;
+            crate::git::add(&description_filename)?;
         } else {
             // User saved an empty file, which means they changed their
             // mind and no longer want to edit the description.

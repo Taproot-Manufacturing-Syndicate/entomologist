@@ -136,7 +136,7 @@ pub fn worktree_is_dirty(dir: &str) -> Result<bool, GitError> {
     return Ok(result.stdout.len() > 0);
 }
 
-pub fn add_file(file: &std::path::Path) -> Result<(), GitError> {
+pub fn add(file: &std::path::Path) -> Result<(), GitError> {
     let result = std::process::Command::new("git")
         .args(["add", &file.to_string_lossy()])
         .current_dir(file.parent().unwrap())
