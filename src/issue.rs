@@ -289,12 +289,28 @@ impl Issue {
         Ok(())
     }
 
+    /// Set the Assignee of an Issue.
     pub fn set_assignee(&mut self, new_assignee: &str) -> Result<(), IssueError> {
+        let old_assignee = match &self.assignee {
+            Some(assignee) => assignee.clone(),
+            None => String::from("None"),
+        };
         let mut assignee_filename = std::path::PathBuf::from(&self.dir);
         assignee_filename.push("assignee");
         let mut assignee_file = std::fs::File::create(&assignee_filename)?;
         write!(assignee_file, "{}", new_assignee)?;
-        crate::git::git_commit_file(&assignee_filename)?;
+        crate::git::add(&assignee_filename)?;
+        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
+            crate::git::commit(
+                &self.dir,
+                &format!(
+                    "change assignee of issue {}, {} -> {}",
+                    self.dir.file_name().unwrap().to_string_lossy(),
+                    old_assignee,
+                    new_assignee,
+                ),
+            )?;
+        }
         Ok(())
     }
 }

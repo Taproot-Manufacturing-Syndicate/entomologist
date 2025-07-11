@@ -363,30 +363,31 @@ fn handle_command(
             issue_id,
             new_assignee,
         } => {
-            let issues_database =
-                make_issues_database(issues_database_source, IssuesDatabaseAccess::ReadWrite)?;
-            let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
-            let Some(issue) = issues.issues.get_mut(issue_id) else {
+            let issues = read_issues_database(issues_database_source)?;
+            let Some(original_issue) = issues.issues.get(issue_id) else {
                 return Err(anyhow::anyhow!("issue {} not found", issue_id));
             };
-            match (&issue.assignee, new_assignee) {
-                (Some(old_assignee), Some(new_assignee)) => {
-                    println!("issue: {}", issue_id);
+            let old_assignee: String = match &original_issue.assignee {
+                Some(assignee) => assignee.clone(),
+                None => String::from("None"),
+            };
+            println!("issue: {}", issue_id);
+            match new_assignee {
+                Some(new_assignee) => {
+                    let issues_database = make_issues_database(
+                        issues_database_source,
+                        IssuesDatabaseAccess::ReadWrite,
+                    )?;
+                    let mut issues =
+                        entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+                    let Some(issue) = issues.get_mut_issue(issue_id) else {
+                        return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                    };
                     println!("assignee: {} -> {}", old_assignee, new_assignee);
                     issue.set_assignee(new_assignee)?;
                 }
-                (Some(old_assignee), None) => {
-                    println!("issue: {}", issue_id);
+                None => {
                     println!("assignee: {}", old_assignee);
-                }
-                (None, Some(new_assignee)) => {
-                    println!("issue: {}", issue_id);
-                    println!("assignee: None -> {}", new_assignee);
-                    issue.set_assignee(new_assignee)?;
-                }
-                (None, None) => {
-                    println!("issue: {}", issue_id);
-                    println!("assignee: None");
                 }
             }
         }
