@@ -1,4 +1,4 @@
-visually distinguish issues and comments from each other
+`ent show`: visually distinguish issues and comments from each other
 
 `git log` does it well:
 
