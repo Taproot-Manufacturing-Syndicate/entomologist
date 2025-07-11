@@ -261,12 +261,23 @@ impl Issue {
         }
     }
 
+    /// Change the State of the Issue.
     pub fn set_state(&mut self, new_state: State) -> Result<(), IssueError> {
         let mut state_filename = std::path::PathBuf::from(&self.dir);
         state_filename.push("state");
         let mut state_file = std::fs::File::create(&state_filename)?;
         write!(state_file, "{}", new_state)?;
-        crate::git::git_commit_file(&state_filename)?;
+        crate::git::add(&state_filename)?;
+        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
+            crate::git::commit(
+                &self.dir,
+                &format!(
+                    "change state of issue {} to {}",
+                    self.dir.file_name().unwrap().to_string_lossy(),
+                    new_state,
+                ),
+            )?;
+        }
         Ok(())
     }
 
