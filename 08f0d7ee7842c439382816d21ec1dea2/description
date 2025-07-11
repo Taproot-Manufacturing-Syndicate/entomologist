@@ -35,11 +35,26 @@ or a due date this week.
 
 ## Done last week
 
-I can imagine finding the issues with state=done, running `git log`
-on their state file, finding the datetime of the transition to done,
-and selecting the ones where that datetime is in a particular time window.
+I can imagine finding the issues with state=done, running `git log` on
+their state file, finding the datetime of the transition to done, and
+selecting the ones where that datetime is in a particular time window.
 
-Not sure how to express to ent that that is what i want though.
+This has the drawback that it's hard to lie about...  With taskwarrior
+I often found myself finishing a task on Week X, but forgetting to mark
+it complete.  Then the Monday of Week X+1 i would mark it complete.
+If i didn't override the completion-date the task would look like it
+was completed on Week X+1, not Week X like i wanted.
+
+In git we have `git commit --date=DATE`, but that's only usable at
+commit-time (and awkward to express to ent).  We can rewrite history with
+`git rebase`, but only until we `ent sync`.
+
+Maybe the `state` file should have a date in it, in addition to the
+state word?  Or maybe `completion-date` should be a key in a per-issue
+key-value store?  Is that kv store related to tags?  Idk...
+
+Not sure how to express to ent what completion-dates i want to see.
+Maybe a new filter type?  `ent list finished=2025-07-01..now`?
 
 Maybe we can use git tags in the entomologist-data branch somehow?
 `git log` between tags and look for "state: _ -> done".  But how to
