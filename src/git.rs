@@ -251,7 +251,7 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
     if !result.status.success() {
         println!(
             "Sync failed!  'git log' error!  Help, a human needs to fix the mess in {:?}",
-            dir
+            branch
         );
         println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
         println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
@@ -277,7 +277,7 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
     if !result.status.success() {
         println!(
             "Sync failed!  'git log' error!  Help, a human needs to fix the mess in {:?}",
-            dir
+            branch
         );
         println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
         println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
@@ -297,7 +297,7 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
     if !result.status.success() {
         println!(
             "Sync failed!  Merge error!  Help, a human needs to fix the mess in {:?}",
-            dir
+            branch
         );
         println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
         println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
@@ -312,7 +312,7 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
     if !result.status.success() {
         println!(
             "Sync failed!  Push error!  Help, a human needs to fix the mess in {:?}",
-            dir
+            branch
         );
         println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
         println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
