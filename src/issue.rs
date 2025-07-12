@@ -251,6 +251,7 @@ impl Issue {
 
     /// Change the State of the Issue.
     pub fn set_state(&mut self, new_state: State) -> Result<(), IssueError> {
+        let old_state = self.state.clone();
         let mut state_filename = std::path::PathBuf::from(&self.dir);
         state_filename.push("state");
         let mut state_file = std::fs::File::create(&state_filename)?;
@@ -260,8 +261,9 @@ impl Issue {
             crate::git::commit(
                 &self.dir,
                 &format!(
-                    "change state of issue {} to {}",
+                    "change state of issue {}, {} -> {}",
                     self.dir.file_name().unwrap().to_string_lossy(),
+                    old_state,
                     new_state,
                 ),
             )?;
