@@ -25,6 +25,15 @@ enum Commands {
     /// List issues.
     List {
         /// Filter string, describes issues to include in the list.
+        /// The filter string is composed of chunks separated by ":".
+        /// Each chunk is of the form "name=condition".  The supported
+        /// names and their matching conditions are:
+        ///
+        /// "state": Comma-separated list of states to list.
+        ///
+        /// "assignee": Comma-separated list of assignees to list.
+        /// Defaults to all assignees if not set.
+        ///
         #[arg(default_value_t = String::from("state=New,Backlog,Blocked,InProgress"))]
         filter: String,
     },
