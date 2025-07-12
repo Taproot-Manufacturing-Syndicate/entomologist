@@ -1,0 +1,8 @@
+don't spawn an editor if stdin & stdout aren't a terminal
+
+I sometimes run `ent show ISSUE | more` because ISSUE doesn't fit on my
+screen and we don't have built-in pager support yet.
+
+Then i see something i want to change, or i want to add a comment, so
+i up-arrow in the shell and change `show` to `edit` or `comment`, and
+ent opens what is in effect `vi | more` which isn't what i want at all.
