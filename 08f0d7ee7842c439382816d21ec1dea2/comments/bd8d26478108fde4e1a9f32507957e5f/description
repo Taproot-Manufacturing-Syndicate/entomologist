@@ -1,0 +1,17 @@
+I'm liking the idea of a per-issue key/value store.
+
+I think keys and values are both strings, with possible further
+parsing/interpretation for some keys?
+
+For the application in this issue we'd teach ent to create a "finished"
+key, maybe when setting the state to Done, with a value of an
+ISO8601-style datetime stamp (e.g. "2025-07-12T15:08:58-06:00").
+
+There would be a documented spec of reserved keys and their special
+meanings and handling.
+
+Full user access via CLI, maybe something like `ent get VARIABLE` and
+`ent set VARIABLE VALUE`?  Or `ent variable [NAME[=VALUE]]`?
+
+Or maybe merge this with the tags somehow?  Would that be simpler,
+or more complicated (for the user)?
