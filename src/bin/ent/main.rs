@@ -207,7 +207,32 @@ fn handle_command(
                         Some(assignee) => format!(" (👉 {})", assignee),
                         None => String::from(""),
                     };
-                    println!("{}  {}  {}{}", uuid, comments, issue.title(), assignee);
+                    let tags = match &issue.tags.len() {
+                        0 => String::from(""),
+                        _ => {
+                            // Could use `format!(" {:?}", issue.tags)`
+                            // here, but that results in `["tag1", "TAG2",
+                            // "i-am-also-a-tag"]` and i don't want the
+                            // double-quotes around each tag.
+                            let mut tags = String::from(" [");
+                            let mut separator = "";
+                            for tag in &issue.tags {
+                                tags.push_str(separator);
+                                tags.push_str(tag);
+                                separator = ", ";
+                            }
+                            tags.push_str("]");
+                            tags
+                        }
+                    };
+                    println!(
+                        "{}  {}  {}{}{}",
+                        uuid,
+                        comments,
+                        issue.title(),
+                        assignee,
+                        tags
+                    );
                 }
                 println!("");
             }
