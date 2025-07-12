@@ -22,6 +22,7 @@ pub type IssueHandle = String;
 pub struct Issue {
     pub author: String,
     pub timestamp: chrono::DateTime<chrono::Local>,
+    pub tags: Vec<String>,
     pub state: State,
     pub dependencies: Option<Vec<IssueHandle>>,
     pub assignee: Option<String>,
@@ -51,6 +52,8 @@ pub enum IssueError {
     EditorError,
     #[error("supplied description is empty")]
     EmptyDescription,
+    #[error("tag {0} not found")]
+    TagNotFound(String),
 }
 
 impl FromStr for State {
@@ -97,6 +100,7 @@ impl Issue {
         let mut dependencies: Option<Vec<String>> = None;
         let mut comments = Vec::<crate::comment::Comment>::new();
         let mut assignee: Option<String> = None;
+        let mut tags = Vec::<String>::new();
 
         for direntry in dir.read_dir()? {
             if let Ok(direntry) = direntry {
@@ -119,6 +123,13 @@ impl Issue {
                     if deps.len() > 0 {
                         dependencies = Some(deps);
                     }
+                } else if file_name == "tags" {
+                    let contents = std::fs::read_to_string(direntry.path())?;
+                    tags = contents
+                        .lines()
+                        .filter(|s| s.len() > 0)
+                        .map(|tag| String::from(tag.trim()))
+                        .collect();
                 } else if file_name == "comments" && direntry.metadata()?.is_dir() {
                     Self::read_comments(&mut comments, &direntry.path())?;
                 } else {
@@ -138,6 +149,7 @@ impl Issue {
         Ok(Self {
             author,
             timestamp,
+            tags,
             state: state,
             dependencies,
             assignee,
@@ -192,6 +204,7 @@ impl Issue {
         let mut issue = Self {
             author: String::from(""),
             timestamp: chrono::Local::now(),
+            tags: Vec::<String>::new(),
             state: State::New,
             dependencies: None,
             assignee: None,
@@ -303,6 +316,51 @@ impl Issue {
         }
         Ok(())
     }
+
+    /// Add a new Tag to the Issue.  Commits.
+    pub fn add_tag(&mut self, tag: &str) -> Result<(), IssueError> {
+        let tag_string = String::from(tag);
+        if self.tags.contains(&tag_string) {
+            return Ok(());
+        }
+        self.tags.push(tag_string);
+        self.tags.sort();
+        self.commit_tags(&format!(
+            "issue {} add tag {}",
+            self.dir.file_name().unwrap().to_string_lossy(),
+            tag
+        ))?;
+        Ok(())
+    }
+
+    /// Remove a Tag from the Issue.  Commits.
+    pub fn remove_tag(&mut self, tag: &str) -> Result<(), IssueError> {
+        let tag_string = String::from(tag);
+        let Some(index) = self.tags.iter().position(|x| x == &tag_string) else {
+            return Err(IssueError::TagNotFound(tag_string));
+        };
+        self.tags.remove(index);
+        self.commit_tags(&format!(
+            "issue {} remove tag {}",
+            self.dir.file_name().unwrap().to_string_lossy(),
+            tag
+        ))?;
+        Ok(())
+    }
+
+    pub fn has_tag(&self, tag: &str) -> bool {
+        let tag_string = String::from(tag);
+        self.tags.iter().position(|x| x == &tag_string).is_some()
+    }
+
+    pub fn has_any_tag(&self, tags: &std::collections::HashSet<&str>) -> bool {
+        for tag in tags.iter() {
+            if self.has_tag(tag) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 // This is the internal/private API of Issue.
@@ -357,6 +415,18 @@ impl Issue {
         self.read_description()?;
         Ok(())
     }
+
+    fn commit_tags(&self, commit_message: &str) -> Result<(), IssueError> {
+        let mut tags_filename = self.dir.clone();
+        tags_filename.push("tags");
+        let mut tags_file = std::fs::File::create(&tags_filename)?;
+        for tag in &self.tags {
+            writeln!(tags_file, "{}", tag)?;
+        }
+        crate::git::add(&tags_filename)?;
+        crate::git::commit(&self.dir, commit_message)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -372,6 +442,11 @@ mod tests {
             timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
+            tags: Vec::<String>::from([
+                String::from("tag1"),
+                String::from("TAG2"),
+                String::from("i-am-also-a-tag")
+            ]),
             state: State::New,
             dependencies: None,
             assignee: None,
@@ -391,6 +466,7 @@ mod tests {
             timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
+            tags: Vec::<String>::new(),
             state: State::InProgress,
             dependencies: None,
             assignee: Some(String::from("beep boop")),

@@ -25,6 +25,19 @@ enum Commands {
     /// List issues.
     List {
         /// Filter string, describes issues to include in the list.
+        /// The filter string is composed of chunks separated by ":".
+        /// Each chunk is of the form "name=condition".  The supported
+        /// names and their matching conditions are:
+        ///
+        /// "state": Comma-separated list of states to list.
+        ///
+        /// "assignee": Comma-separated list of assignees to list.
+        /// Defaults to all assignees if not set.
+        ///
+        /// "tag": Comma-separated list of tags to include or exclude
+        /// (if prefixed with "-").  If omitted, defaults to including
+        /// all tags and excluding none.
+        ///
         #[arg(default_value_t = String::from("state=New,Backlog,Blocked,InProgress"))]
         filter: String,
     },
@@ -63,6 +76,13 @@ enum Commands {
     Assign {
         issue_id: String,
         new_assignee: Option<String>,
+    },
+
+    /// Add or remove a Tag to/from an Issue, or list the Tags on an Issue.
+    Tag {
+        issue_id: String,
+        #[arg(allow_hyphen_values = true)]
+        tag: Option<String>,
     },
 }
 
@@ -171,6 +191,17 @@ fn handle_command(
                     }
                 }
 
+                if filter.include_tags.len() > 0 {
+                    if !issue.has_any_tag(&filter.include_tags) {
+                        continue;
+                    }
+                }
+                if filter.exclude_tags.len() > 0 {
+                    if issue.has_any_tag(&filter.exclude_tags) {
+                        continue;
+                    }
+                }
+
                 // This issue passed all the filters, include it in list.
                 uuids_by_state
                     .entry(issue.state.clone())
@@ -207,7 +238,32 @@ fn handle_command(
                         Some(assignee) => format!(" (👉 {})", assignee),
                         None => String::from(""),
                     };
-                    println!("{}  {}  {}{}", uuid, comments, issue.title(), assignee);
+                    let tags = match &issue.tags.len() {
+                        0 => String::from(""),
+                        _ => {
+                            // Could use `format!(" {:?}", issue.tags)`
+                            // here, but that results in `["tag1", "TAG2",
+                            // "i-am-also-a-tag"]` and i don't want the
+                            // double-quotes around each tag.
+                            let mut tags = String::from(" [");
+                            let mut separator = "";
+                            for tag in &issue.tags {
+                                tags.push_str(separator);
+                                tags.push_str(tag);
+                                separator = ", ";
+                            }
+                            tags.push_str("]");
+                            tags
+                        }
+                    };
+                    println!(
+                        "{}  {}  {}{}{}",
+                        uuid,
+                        comments,
+                        issue.title(),
+                        assignee,
+                        tags
+                    );
                 }
                 println!("");
             }
@@ -402,6 +458,51 @@ fn handle_command(
                 }
                 None => {
                     println!("assignee: {}", old_assignee);
+                }
+            }
+        }
+
+        Commands::Tag { issue_id, tag } => {
+            let issues = read_issues_database(issues_database_source)?;
+            let Some(issue) = issues.issues.get(issue_id) else {
+                return Err(anyhow::anyhow!("issue {} not found", issue_id));
+            };
+            match tag {
+                Some(tag) => {
+                    // Add or remove tag.
+                    let issues_database = make_issues_database(
+                        issues_database_source,
+                        IssuesDatabaseAccess::ReadWrite,
+                    )?;
+                    let mut issues =
+                        entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+                    let Some(issue) = issues.get_mut_issue(issue_id) else {
+                        return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                    };
+                    if tag.len() == 0 {
+                        return Err(anyhow::anyhow!("invalid zero-length tag"));
+                    }
+                    if tag.chars().nth(0).unwrap() == '-' {
+                        let tag = &tag[1..];
+                        issue.remove_tag(tag)?;
+                    } else {
+                        issue.add_tag(tag)?;
+                    }
+                }
+                None => {
+                    // Just list the tags.
+                    match &issue.tags.len() {
+                        0 => println!("no tags"),
+                        _ => {
+                            // Could use `format!(" {:?}", issue.tags)`
+                            // here, but that results in `["tag1", "TAG2",
+                            // "i-am-also-a-tag"]` and i don't want the
+                            // double-quotes around each tag.
+                            for tag in &issue.tags {
+                                println!("{}", tag);
+                            }
+                        }
+                    }
                 }
             }
         }
