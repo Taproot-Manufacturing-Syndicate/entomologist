@@ -1,0 +1,20 @@
+put ent issue database in a dir in the main branches?
+
+Currently entomologist can access an issue database in a branch (via
+temporary worktrees), or in a directory (via direct access).
+
+The directory-based issue database mode is kind of broken, because
+entomologist blindly runs `git commit` after modifying the database
+(and isn't careful about managing the git index when doing so).
+
+(Tangent: The IssueDatabase and IssueDatabaseSource structs of the `ent`
+binary should maybe move into the lib Issues struct, and the code could
+make smarter choices about how to access the database.)
+
+Putting the entomologist issue database in the main branch(es) of the
+repo has some appealing qualities.  For example, a bug-fix branch could
+both fix the bug in the code, and change the bug's issue status from
+"InProgress" to "Done", so that when the branch is merged to main,
+the bug gets fixed there.
+
+The branch can be rebased on top of main to pick up changes to the bug.
