@@ -22,6 +22,7 @@ pub type IssueHandle = String;
 pub struct Issue {
     pub author: String,
     pub timestamp: chrono::DateTime<chrono::Local>,
+    pub tags: Vec<String>,
     pub state: State,
     pub dependencies: Option<Vec<IssueHandle>>,
     pub assignee: Option<String>,
@@ -97,6 +98,7 @@ impl Issue {
         let mut dependencies: Option<Vec<String>> = None;
         let mut comments = Vec::<crate::comment::Comment>::new();
         let mut assignee: Option<String> = None;
+        let mut tags = Vec::<String>::new();
 
         for direntry in dir.read_dir()? {
             if let Ok(direntry) = direntry {
@@ -119,6 +121,13 @@ impl Issue {
                     if deps.len() > 0 {
                         dependencies = Some(deps);
                     }
+                } else if file_name == "tags" {
+                    let contents = std::fs::read_to_string(direntry.path())?;
+                    tags = contents
+                        .lines()
+                        .filter(|s| s.len() > 0)
+                        .map(|tag| String::from(tag.trim()))
+                        .collect();
                 } else if file_name == "comments" && direntry.metadata()?.is_dir() {
                     Self::read_comments(&mut comments, &direntry.path())?;
                 } else {
@@ -138,6 +147,7 @@ impl Issue {
         Ok(Self {
             author,
             timestamp,
+            tags,
             state: state,
             dependencies,
             assignee,
@@ -192,6 +202,7 @@ impl Issue {
         let mut issue = Self {
             author: String::from(""),
             timestamp: chrono::Local::now(),
+            tags: Vec::<String>::new(),
             state: State::New,
             dependencies: None,
             assignee: None,
@@ -372,6 +383,11 @@ mod tests {
             timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
+            tags: Vec::<String>::from([
+                String::from("tag1"),
+                String::from("TAG2"),
+                String::from("i-am-also-a-tag")
+            ]),
             state: State::New,
             dependencies: None,
             assignee: None,
@@ -391,6 +407,7 @@ mod tests {
             timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
+            tags: Vec::<String>::new(),
             state: State::InProgress,
             dependencies: None,
             assignee: Some(String::from("beep boop")),
