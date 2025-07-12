@@ -34,6 +34,10 @@ enum Commands {
         /// "assignee": Comma-separated list of assignees to list.
         /// Defaults to all assignees if not set.
         ///
+        /// "tag": Comma-separated list of tags to include or exclude
+        /// (if prefixed with "-").  If omitted, defaults to including
+        /// all tags and excluding none.
+        ///
         #[arg(default_value_t = String::from("state=New,Backlog,Blocked,InProgress"))]
         filter: String,
     },
@@ -183,6 +187,17 @@ fn handle_command(
                         None => "",
                     };
                     if !filter.include_assignees.contains(assignee) {
+                        continue;
+                    }
+                }
+
+                if filter.include_tags.len() > 0 {
+                    if !issue.has_any_tag(&filter.include_tags) {
+                        continue;
+                    }
+                }
+                if filter.exclude_tags.len() > 0 {
+                    if issue.has_any_tag(&filter.exclude_tags) {
                         continue;
                     }
                 }

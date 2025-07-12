@@ -347,6 +347,20 @@ impl Issue {
         ))?;
         Ok(())
     }
+
+    pub fn has_tag(&self, tag: &str) -> bool {
+        let tag_string = String::from(tag);
+        self.tags.iter().position(|x| x == &tag_string).is_some()
+    }
+
+    pub fn has_any_tag(&self, tags: &std::collections::HashSet<&str>) -> bool {
+        for tag in tags.iter() {
+            if self.has_tag(tag) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 // This is the internal/private API of Issue.

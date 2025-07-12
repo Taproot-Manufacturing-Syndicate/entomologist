@@ -20,6 +20,8 @@ pub enum ParseFilterError {
 pub struct Filter<'a> {
     pub include_states: std::collections::HashSet<crate::issue::State>,
     pub include_assignees: std::collections::HashSet<&'a str>,
+    pub include_tags: std::collections::HashSet<&'a str>,
+    pub exclude_tags: std::collections::HashSet<&'a str>,
 }
 
 impl<'a> Filter<'a> {
@@ -33,6 +35,8 @@ impl<'a> Filter<'a> {
                 State::New,
             ]),
             include_assignees: std::collections::HashSet::<&'a str>::new(),
+            include_tags: std::collections::HashSet::<&'a str>::new(),
+            exclude_tags: std::collections::HashSet::<&'a str>::new(),
         };
 
         for filter_chunk_str in filter_str.split(":") {
@@ -48,12 +52,29 @@ impl<'a> Filter<'a> {
                         f.include_states.insert(crate::issue::State::from_str(s)?);
                     }
                 }
+
                 "assignee" => {
                     f.include_assignees.clear();
                     for s in tokens[1].split(",") {
                         f.include_assignees.insert(s);
                     }
                 }
+
+                "tag" => {
+                    f.include_tags.clear();
+                    f.exclude_tags.clear();
+                    for s in tokens[1].split(",") {
+                        if s.len() == 0 {
+                            return Err(ParseFilterError::ParseError);
+                        }
+                        if s.chars().nth(0).unwrap() == '-' {
+                            f.exclude_tags.insert(&s[1..]);
+                        } else {
+                            f.include_tags.insert(s);
+                        }
+                    }
+                }
+
                 _ => {
                     println!("unknown filter chunk '{}'", filter_chunk_str);
                     return Err(ParseFilterError::ParseError);
