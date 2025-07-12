@@ -52,6 +52,8 @@ pub enum IssueError {
     EditorError,
     #[error("supplied description is empty")]
     EmptyDescription,
+    #[error("tag {0} not found")]
+    TagNotFound(String),
 }
 
 impl FromStr for State {
@@ -314,6 +316,37 @@ impl Issue {
         }
         Ok(())
     }
+
+    /// Add a new Tag to the Issue.  Commits.
+    pub fn add_tag(&mut self, tag: &str) -> Result<(), IssueError> {
+        let tag_string = String::from(tag);
+        if self.tags.contains(&tag_string) {
+            return Ok(());
+        }
+        self.tags.push(tag_string);
+        self.tags.sort();
+        self.commit_tags(&format!(
+            "issue {} add tag {}",
+            self.dir.file_name().unwrap().to_string_lossy(),
+            tag
+        ))?;
+        Ok(())
+    }
+
+    /// Remove a Tag from the Issue.  Commits.
+    pub fn remove_tag(&mut self, tag: &str) -> Result<(), IssueError> {
+        let tag_string = String::from(tag);
+        let Some(index) = self.tags.iter().position(|x| x == &tag_string) else {
+            return Err(IssueError::TagNotFound(tag_string));
+        };
+        self.tags.remove(index);
+        self.commit_tags(&format!(
+            "issue {} remove tag {}",
+            self.dir.file_name().unwrap().to_string_lossy(),
+            tag
+        ))?;
+        Ok(())
+    }
 }
 
 // This is the internal/private API of Issue.
@@ -366,6 +399,18 @@ impl Issue {
             return Err(IssueError::EmptyDescription);
         }
         self.read_description()?;
+        Ok(())
+    }
+
+    fn commit_tags(&self, commit_message: &str) -> Result<(), IssueError> {
+        let mut tags_filename = self.dir.clone();
+        tags_filename.push("tags");
+        let mut tags_file = std::fs::File::create(&tags_filename)?;
+        for tag in &self.tags {
+            writeln!(tags_file, "{}", tag)?;
+        }
+        crate::git::add(&tags_filename)?;
+        crate::git::commit(&self.dir, commit_message)?;
         Ok(())
     }
 }
