@@ -1,9 +1,15 @@
-add `ent tag ISSUE_ID [-]TAG`
+add `ent tag ISSUE [[-]TAG]`
 
-If the optional "-" is not supplied, the TAG is *added* to the ISSUE.
+# Usage
 
-If the "-" *is* supplied before the TAG, the TAG is *removed* from
-the ISSUE.
+`ent tag ISSUE`: List tags on ISSUE.
+
+`ent tag ISSUE TAG`: Add TAG to ISSUE.
+
+`ent tag ISSUE -TAG`: Remove TAG from ISSUE.
+
+
+# Notes
 
 Tags are short text strings without white space, and not beginning with
 "-".
