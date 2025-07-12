@@ -38,6 +38,8 @@ pub enum IssueError {
     #[error(transparent)]
     StdIoError(#[from] std::io::Error),
     #[error(transparent)]
+    EnvVarError(#[from] std::env::VarError),
+    #[error(transparent)]
     CommentError(#[from] crate::comment::CommentError),
     #[error("Failed to parse issue")]
     IssueParseError,
@@ -87,6 +89,7 @@ impl fmt::Display for State {
     }
 }
 
+// This is the public API of Issue.
 impl Issue {
     pub fn new_from_dir(dir: &std::path::Path) -> Result<Self, IssueError> {
         let mut description: Option<String> = None;
@@ -158,33 +161,35 @@ impl Issue {
         Ok(())
     }
 
-    pub fn new_comment(&mut self) -> Result<crate::comment::Comment, IssueError> {
-        let mut dir = std::path::PathBuf::from(&self.dir);
-        dir.push("comments");
-        if !dir.exists() {
-            std::fs::create_dir(&dir)?;
-        }
-
-        let rnd: u128 = rand::random();
-        let uuid = format!("{:032x}", rnd);
-        dir.push(&uuid);
-        std::fs::create_dir(&dir)?;
-
-        Ok(crate::comment::Comment {
-            uuid,
-            author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            timestamp: chrono::Local::now(),
-            description: String::from(""), // FIXME
-            dir,
-        })
+    /// Add a new Comment to the Issue.  Commits.
+    pub fn add_comment(
+        &mut self,
+        description: &Option<String>,
+    ) -> Result<crate::comment::Comment, IssueError> {
+        let comment = crate::comment::Comment::new(self, description)?;
+        Ok(comment)
     }
 
-    pub fn new(dir: &std::path::Path) -> Result<Self, IssueError> {
+    /// Create a new Issue in an Issues database specified by a directory.
+    /// The new Issue will live in a new subdirectory, named by a unique
+    /// Issue identifier.
+    ///
+    /// If a description string is supplied, the new Issue's description
+    /// will be initialized from it with no user interaction.
+    ///
+    /// If no description is supplied, the user will be prompted to
+    /// input one into an editor.
+    ///
+    /// On success, the new Issue with its valid description is committed
+    /// to the Issues database.
+    pub fn new(dir: &std::path::Path, description: &Option<String>) -> Result<Self, IssueError> {
         let mut issue_dir = std::path::PathBuf::from(dir);
         let rnd: u128 = rand::random();
-        issue_dir.push(&format!("{:032x}", rnd));
+        let issue_id = format!("{:032x}", rnd);
+        issue_dir.push(&issue_id);
         std::fs::create_dir(&issue_dir)?;
-        Ok(Self {
+
+        let mut issue = Self {
             author: String::from(""),
             timestamp: chrono::Local::now(),
             state: State::New,
@@ -192,58 +197,38 @@ impl Issue {
             assignee: None,
             description: String::from(""), // FIXME: kind of bogus to use the empty string as None
             comments: Vec::<crate::comment::Comment>::new(),
-            dir: issue_dir,
-        })
-    }
+            dir: issue_dir.clone(),
+        };
 
-    pub fn set_description(&mut self, description: &str) -> Result<(), IssueError> {
-        if description.len() == 0 {
-            return Err(IssueError::EmptyDescription);
-        }
-        self.description = String::from(description);
-        let mut description_filename = std::path::PathBuf::from(&self.dir);
-        description_filename.push("description");
-        let mut description_file = std::fs::File::create(&description_filename)?;
-        write!(description_file, "{}", description)?;
-        crate::git::git_commit_file(&description_filename)?;
-        Ok(())
-    }
-
-    pub fn read_description(&mut self) -> Result<(), IssueError> {
-        let mut description_filename = std::path::PathBuf::from(&self.dir);
-        description_filename.push("description");
-        self.description = std::fs::read_to_string(description_filename)?;
-        Ok(())
-    }
-
-    pub fn edit_description(&mut self) -> Result<(), IssueError> {
-        let mut description_filename = std::path::PathBuf::from(&self.dir);
-        description_filename.push("description");
-        let exists = description_filename.exists();
-        let result = std::process::Command::new("vi")
-            .arg(&description_filename.as_mut_os_str())
-            .spawn()?
-            .wait_with_output()?;
-        if !result.status.success() {
-            println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-            println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
-            return Err(IssueError::EditorError);
-        }
-        if description_filename.exists() && description_filename.metadata()?.len() > 0 {
-            crate::git::add(&description_filename)?;
-        } else {
-            // User saved an empty file, which means they changed their
-            // mind and no longer want to edit the description.
-            if exists {
-                crate::git::restore_file(&description_filename)?;
+        match description {
+            Some(description) => {
+                if description.len() == 0 {
+                    return Err(IssueError::EmptyDescription);
+                }
+                issue.description = String::from(description);
+                let description_filename = issue.description_filename();
+                let mut description_file = std::fs::File::create(&description_filename)?;
+                write!(description_file, "{}", description)?;
             }
-            return Err(IssueError::EmptyDescription);
-        }
+            None => issue.edit_description_file()?,
+        };
+
+        crate::git::add(&issue_dir)?;
+        crate::git::commit(&issue_dir, &format!("create new issue {}", issue_id))?;
+
+        Ok(issue)
+    }
+
+    /// Interactively edit the description of an existing Issue.
+    pub fn edit_description(&mut self) -> Result<(), IssueError> {
+        self.edit_description_file()?;
+        let description_filename = self.description_filename();
+        crate::git::add(&description_filename)?;
         if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
             crate::git::commit(
                 &description_filename.parent().unwrap(),
                 &format!(
-                    "new description for issue {}",
+                    "edit description of issue {}",
                     description_filename
                         .parent()
                         .unwrap()
@@ -252,11 +237,11 @@ impl Issue {
                         .to_string_lossy()
                 ),
             )?;
-            self.read_description()?;
         }
         Ok(())
     }
 
+    /// Return the Issue title (first line of the description).
     pub fn title<'a>(&'a self) -> &'a str {
         match self.description.find("\n") {
             Some(index) => &self.description.as_str()[..index],
@@ -264,12 +249,23 @@ impl Issue {
         }
     }
 
+    /// Change the State of the Issue.
     pub fn set_state(&mut self, new_state: State) -> Result<(), IssueError> {
         let mut state_filename = std::path::PathBuf::from(&self.dir);
         state_filename.push("state");
         let mut state_file = std::fs::File::create(&state_filename)?;
         write!(state_file, "{}", new_state)?;
-        crate::git::git_commit_file(&state_filename)?;
+        crate::git::add(&state_filename)?;
+        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
+            crate::git::commit(
+                &self.dir,
+                &format!(
+                    "change state of issue {} to {}",
+                    self.dir.file_name().unwrap().to_string_lossy(),
+                    new_state,
+                ),
+            )?;
+        }
         Ok(())
     }
 
@@ -281,12 +277,82 @@ impl Issue {
         Ok(())
     }
 
+    /// Set the Assignee of an Issue.
     pub fn set_assignee(&mut self, new_assignee: &str) -> Result<(), IssueError> {
+        let old_assignee = match &self.assignee {
+            Some(assignee) => assignee.clone(),
+            None => String::from("None"),
+        };
         let mut assignee_filename = std::path::PathBuf::from(&self.dir);
         assignee_filename.push("assignee");
         let mut assignee_file = std::fs::File::create(&assignee_filename)?;
         write!(assignee_file, "{}", new_assignee)?;
-        crate::git::git_commit_file(&assignee_filename)?;
+        crate::git::add(&assignee_filename)?;
+        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
+            crate::git::commit(
+                &self.dir,
+                &format!(
+                    "change assignee of issue {}, {} -> {}",
+                    self.dir.file_name().unwrap().to_string_lossy(),
+                    old_assignee,
+                    new_assignee,
+                ),
+            )?;
+        }
+        Ok(())
+    }
+}
+
+// This is the internal/private API of Issue.
+impl Issue {
+    fn description_filename(&self) -> std::path::PathBuf {
+        let mut description_filename = std::path::PathBuf::from(&self.dir);
+        description_filename.push("description");
+        description_filename
+    }
+
+    /// Read the Issue's description file into the internal Issue representation.
+    fn read_description(&mut self) -> Result<(), IssueError> {
+        let description_filename = self.description_filename();
+        self.description = std::fs::read_to_string(description_filename)?;
+        Ok(())
+    }
+
+    /// Opens the Issue's `description` file in an editor.  Validates the
+    /// editor's exit code.  Updates the Issue's internal description
+    /// from what the user saved in the file.
+    ///
+    /// Used by Issue::new() when no description is supplied, and also
+    /// used by `ent edit ISSUE`.
+    fn edit_description_file(&mut self) -> Result<(), IssueError> {
+        let description_filename = self.description_filename();
+        let exists = description_filename.exists();
+        let editor = match std::env::var("EDITOR") {
+            Ok(editor) => editor,
+            Err(std::env::VarError::NotPresent) => String::from("vi"),
+            Err(e) => return Err(e.into()),
+        };
+        let result = std::process::Command::new(editor)
+            .arg(&description_filename.as_os_str())
+            .spawn()?
+            .wait_with_output()?;
+        if !result.status.success() {
+            println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
+            println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+            return Err(IssueError::EditorError);
+        }
+        if !description_filename.exists() || description_filename.metadata()?.len() == 0 {
+            // User saved an empty file, or exited without saving while
+            // editing a new description file.  Both means they changed
+            // their mind and no longer want to edit the description.
+            if exists {
+                // File existed before the user emptied it, so restore
+                // the original.
+                crate::git::restore_file(&description_filename)?;
+            }
+            return Err(IssueError::EmptyDescription);
+        }
+        self.read_description()?;
         Ok(())
     }
 }
