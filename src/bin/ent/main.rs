@@ -64,6 +64,13 @@ enum Commands {
         issue_id: String,
         new_assignee: Option<String>,
     },
+
+    /// Add or remove a Tag to/from an Issue, or list the Tags on an Issue.
+    Tag {
+        issue_id: String,
+        #[arg(allow_hyphen_values = true)]
+        tag: Option<String>,
+    },
 }
 
 /// The main function looks at the command-line arguments and determines
@@ -427,6 +434,51 @@ fn handle_command(
                 }
                 None => {
                     println!("assignee: {}", old_assignee);
+                }
+            }
+        }
+
+        Commands::Tag { issue_id, tag } => {
+            let issues = read_issues_database(issues_database_source)?;
+            let Some(issue) = issues.issues.get(issue_id) else {
+                return Err(anyhow::anyhow!("issue {} not found", issue_id));
+            };
+            match tag {
+                Some(tag) => {
+                    // Add or remove tag.
+                    let issues_database = make_issues_database(
+                        issues_database_source,
+                        IssuesDatabaseAccess::ReadWrite,
+                    )?;
+                    let mut issues =
+                        entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+                    let Some(issue) = issues.get_mut_issue(issue_id) else {
+                        return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                    };
+                    if tag.len() == 0 {
+                        return Err(anyhow::anyhow!("invalid zero-length tag"));
+                    }
+                    if tag.chars().nth(0).unwrap() == '-' {
+                        let tag = &tag[1..];
+                        issue.remove_tag(tag)?;
+                    } else {
+                        issue.add_tag(tag)?;
+                    }
+                }
+                None => {
+                    // Just list the tags.
+                    match &issue.tags.len() {
+                        0 => println!("no tags"),
+                        _ => {
+                            // Could use `format!(" {:?}", issue.tags)`
+                            // here, but that results in `["tag1", "TAG2",
+                            // "i-am-also-a-tag"]` and i don't want the
+                            // double-quotes around each tag.
+                            for tag in &issue.tags {
+                                println!("{}", tag);
+                            }
+                        }
+                    }
                 }
             }
         }
