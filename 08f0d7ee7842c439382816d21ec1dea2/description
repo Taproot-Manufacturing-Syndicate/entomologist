@@ -65,8 +65,7 @@ position the tags on the commits i want?  Seems cumbersome.
 
 entomologist doesn't have due dates yet, but we should probably add that.
 
-entomologist doesn't have tags yet (there's an open ticket for it),
-but once we have that it'll be easy to list "tags=selected,interrupt".
+entomologist has tags so it's be easy to list "tags=selected,interrupt".
 Or maybe we should just use "state=inprogress"?
 
 
