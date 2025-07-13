@@ -1,3 +1,15 @@
+use thiserror::Error;
+use crate::{git::GitError, issues::ReadIssuesError};
+
+/// Errors that the DB can emit:
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error(transparent)]
+    IssuesError(#[from] ReadIssuesError),
+    #[error(transparent)]
+    GitError(#[from] GitError),
+}
+
 
 /// The main function looks at the command-line arguments and determines
 /// from there where to get the Issues Database to operate on.
@@ -50,7 +62,7 @@ pub enum IssuesDatabaseAccess {
 pub fn make_issues_database(
     issues_database_source: &IssuesDatabaseSource,
     access_type: IssuesDatabaseAccess,
-) -> anyhow::Result<IssuesDatabase> {
+) -> Result<IssuesDatabase, Error> {
     match issues_database_source {
         IssuesDatabaseSource::Dir(dir) => Ok(IssuesDatabase {
             dir: std::path::PathBuf::from(dir),
@@ -73,7 +85,7 @@ pub fn make_issues_database(
 
 pub fn read_issues_database(
     issues_database_source: &IssuesDatabaseSource,
-) -> anyhow::Result<crate::issues::Issues> {
+) -> Result<crate::issues::Issues, Error> {
     let issues_database =
         make_issues_database(issues_database_source, IssuesDatabaseAccess::ReadOnly)?;
     Ok(crate::issues::Issues::new_from_dir(
