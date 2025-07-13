@@ -1,5 +1,5 @@
 use core::fmt;
-use std::io::Write;
+use std::io::{IsTerminal, Write};
 use std::str::FromStr;
 
 #[cfg(feature = "log")]
@@ -54,6 +54,8 @@ pub enum IssueError {
     EmptyDescription,
     #[error("tag {0} not found")]
     TagNotFound(String),
+    #[error("stdin/stdout is not a terminal")]
+    StdioIsNotTerminal,
 }
 
 impl FromStr for State {
@@ -385,6 +387,10 @@ impl Issue {
     /// Used by Issue::new() when no description is supplied, and also
     /// used by `ent edit ISSUE`.
     fn edit_description_file(&mut self) -> Result<(), IssueError> {
+        if !std::io::stdin().is_terminal() || !std::io::stdout().is_terminal() {
+            return Err(IssueError::StdioIsNotTerminal);
+        }
+
         let description_filename = self.description_filename();
         let exists = description_filename.exists();
         let editor = match std::env::var("EDITOR") {

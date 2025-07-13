@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::io::{IsTerminal, Write};
 
 #[derive(Debug, PartialEq)]
 pub struct Comment {
@@ -26,6 +26,8 @@ pub enum CommentError {
     EditorError,
     #[error("supplied description is empty")]
     EmptyDescription,
+    #[error("stdin/stdout is not a terminal")]
+    StdioIsNotTerminal,
 }
 
 impl Comment {
@@ -146,6 +148,10 @@ impl Comment {
     /// Used by Issue::add_comment() when no description is supplied,
     /// and (FIXME: in the future) used by `ent edit COMMENT`.
     pub fn edit_description_file(&mut self) -> Result<(), CommentError> {
+        if !std::io::stdin().is_terminal() || !std::io::stdout().is_terminal() {
+            return Err(CommentError::StdioIsNotTerminal);
+        }
+
         let description_filename = self.description_filename();
         let exists = description_filename.exists();
 
