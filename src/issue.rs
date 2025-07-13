@@ -23,6 +23,7 @@ pub struct Issue {
     pub author: String,
     pub timestamp: chrono::DateTime<chrono::Local>,
     pub tags: Vec<String>,
+    pub variables: std::collections::HashMap<String, String>,
     pub state: State,
     pub dependencies: Option<Vec<IssueHandle>>,
     pub assignee: Option<String>,
@@ -103,6 +104,7 @@ impl Issue {
         let mut comments = Vec::<crate::comment::Comment>::new();
         let mut assignee: Option<String> = None;
         let mut tags = Vec::<String>::new();
+        let mut variables = std::collections::HashMap::<String, String>::new();
 
         for direntry in dir.read_dir()? {
             if let Ok(direntry) = direntry {
@@ -138,6 +140,7 @@ impl Issue {
                     #[cfg(feature = "log")]
                     debug!("ignoring unknown file in issue directory: {:?}", file_name);
                 }
+                // FIXME: read variables file
             }
         }
 
@@ -152,6 +155,7 @@ impl Issue {
             author,
             timestamp,
             tags,
+            variables,
             state: state,
             dependencies,
             assignee,
@@ -207,6 +211,7 @@ impl Issue {
             author: String::from(""),
             timestamp: chrono::Local::now(),
             tags: Vec::<String>::new(),
+            variables: std::collections::HashMap::<String, String>::new(),
             state: State::New,
             dependencies: None,
             assignee: None,
@@ -453,6 +458,7 @@ mod tests {
                 String::from("TAG2"),
                 String::from("i-am-also-a-tag")
             ]),
+            variables: std::collections::HashMap::<String, String>::new(),
             state: State::New,
             dependencies: None,
             assignee: None,
@@ -473,6 +479,7 @@ mod tests {
                 .unwrap()
                 .with_timezone(&chrono::Local),
             tags: Vec::<String>::new(),
+            variables: std::collections::HashMap::<String, String>::new(),
             state: State::InProgress,
             dependencies: None,
             assignee: Some(String::from("beep boop")),

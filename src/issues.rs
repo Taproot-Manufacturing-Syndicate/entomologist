@@ -101,6 +101,7 @@ mod tests {
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 tags: Vec::<String>::new(),
+                variables: std::collections::HashMap::<String, String>::new(),
                 state: crate::issue::State::InProgress,
                 dependencies: None,
                 assignee: Some(String::from("beep boop")),
@@ -125,6 +126,7 @@ mod tests {
                     String::from("TAG2"),
                     String::from("i-am-also-a-tag")
                 ]),
+                variables: std::collections::HashMap::<String, String>::new(),
                 state: crate::issue::State::New,
                 dependencies: None,
                 assignee: None,
@@ -154,6 +156,7 @@ mod tests {
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 tags: Vec::<String>::new(),
+                variables: std::collections::HashMap::<String, String>::new(),
                 state: crate::issue::State::Done,
                 dependencies: None,
                 assignee: None,
@@ -188,6 +191,7 @@ mod tests {
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 tags: Vec::<String>::new(),
+                variables: std::collections::HashMap::<String, String>::new(),
                 state: crate::issue::State::WontDo,
                 dependencies: None,
                 assignee: None,
@@ -217,6 +221,7 @@ mod tests {
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 tags: Vec::<String>::new(),
+                variables: std::collections::HashMap::<String, String>::new(),
                 state: crate::issue::State::Done,
                 dependencies: None,
                 assignee: None,
@@ -237,6 +242,7 @@ mod tests {
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 tags: Vec::<String>::new(),
+                variables: std::collections::HashMap::<String, String>::new(),
                 state: crate::issue::State::WontDo,
                 dependencies: None,
                 assignee: None,
@@ -257,6 +263,7 @@ mod tests {
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 tags: Vec::<String>::new(),
+                variables: std::collections::HashMap::<String, String>::new(),
                 state: crate::issue::State::WontDo,
                 dependencies: Some(vec![
                     crate::issue::IssueHandle::from("3fa5bfd93317ad25772680071d5ac3259cd2384f"),
