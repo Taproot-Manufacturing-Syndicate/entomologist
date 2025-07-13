@@ -1,1 +1,5 @@
-move issues database type to issues.rs
+move IssuesDatabase out of binary and into library
+
+currently the IssuesDatabase type lives in the binary application, which makes it impossible to use with other applications. 
+
+since the IssuesDatabase type is needed for some of the git management related to the storage of issues, it should exist as part of the library
