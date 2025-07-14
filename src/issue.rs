@@ -370,11 +370,10 @@ impl Issue {
     }
 
     /// Set the value of an Issue variable.  Commits.
-    pub fn set_variable(&mut self, key: &str, value: &str) -> Result<(), IssueError> {
-        match self.variables.get(key) {
-            Some(val) => {}
-            None => {}
-        }
+    pub fn set_variable(&mut self, key: &str, new_value: &str) -> Result<(), IssueError> {
+        let _ = self
+            .variables
+            .insert(String::from(key), String::from(new_value));
         // self.tags.push(tag_string);
         // self.tags.sort();
         // self.commit_tags(&format!(
