@@ -368,6 +368,22 @@ impl Issue {
         }
         return false;
     }
+
+    /// Set the value of an Issue variable.  Commits.
+    pub fn set_variable(&mut self, key: &str, value: &str) -> Result<(), IssueError> {
+        match self.variables.get(key) {
+            Some(val) => {}
+            None => {}
+        }
+        // self.tags.push(tag_string);
+        // self.tags.sort();
+        // self.commit_tags(&format!(
+        //     "issue {} add tag {}",
+        //     self.dir.file_name().unwrap().to_string_lossy(),
+        //     tag
+        // ))?;
+        Ok(())
+    }
 }
 
 // This is the internal/private API of Issue.
