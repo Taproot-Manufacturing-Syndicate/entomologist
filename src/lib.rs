@@ -4,6 +4,7 @@ pub mod comment;
 pub mod git;
 pub mod issue;
 pub mod issues;
+pub mod database;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ParseFilterError {
