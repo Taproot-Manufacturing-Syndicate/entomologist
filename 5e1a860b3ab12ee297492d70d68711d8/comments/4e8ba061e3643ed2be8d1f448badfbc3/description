@@ -1,0 +1,5 @@
+have initial rough copy of the TUI binary. i had initially started developing it as a standalone application but then decided it would be better to include it as part of the entomologist repository. 
+
+currently the TUI can only list issues and show a preview, and scaling is broken. 
+
+i also need to update it so that the widget implementations are done as part of the library instead of using the horrible, cursed wrappers that are currently around the types... (since it was a seperate binary, and the trait was from a different crate and the type was from a different crate, rust won't let you `impl` a trait) 
