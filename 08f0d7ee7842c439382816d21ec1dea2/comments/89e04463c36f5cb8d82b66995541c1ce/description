@@ -1,0 +1,5 @@
+Or maybe things that required special handling in the code should live
+directly as fields in the Issue struct?  With their own getter/setter
+API & CLI?
+
+Not sure what's cleaner.
