@@ -1,0 +1,17 @@
+we need some way to search the text of issues and comments
+
+Is this a normal filter?  Maybe `ent list text=REGEX`?
+
+Or maybe we want more detailed output than just a list?  Showing the
+actual Issue or Comment that matches.  Maybe `ent search REGEX` producing
+something like:
+```
+$ ent search REGEX
+issue: issue1
+blah blah
+
+issue: issue2
+blah
+    comment 1
+    comment 2
+```
