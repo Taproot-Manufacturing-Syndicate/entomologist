@@ -1,0 +1,12 @@
+We also need to implement dependency handling, not sure how that should work.
+
+* If we add a dependency to an Issue, to we put the Issue into state
+  Blocked?
+
+* If an Issue is marked Done, do we search all the other issues to see
+  if the Done issue was a dependency, and remove it?
+
+* What happens when the last dependency of an Issue is removed?
+
+(Maybe this comment should be a new issue, not a comment on the parent
+issue)
