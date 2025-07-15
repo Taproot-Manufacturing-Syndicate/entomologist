@@ -2,7 +2,7 @@ TUI v0.1
 
 build a TUI binary for ent which mirrors the CLI functionality
 
-- [ ] issues list
+- [ ] issues list (88d5111fd6e59802d0b839ff1fd6bf71)
     - [ ] filtering(?)
 - [x] show issue preview
 - [x] show issue detail
