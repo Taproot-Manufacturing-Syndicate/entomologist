@@ -1,0 +1,5 @@
+refactor IssuesDatabaseSource / IssuesDatabase / Issues
+
+If feels like there's a lot of overlap and intimate sharing of
+responsibility among these three, and i'm not sure we have the best
+abstraction to describe it.
