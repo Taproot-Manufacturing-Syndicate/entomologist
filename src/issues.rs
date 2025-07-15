@@ -93,6 +93,7 @@ mod tests {
             creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
+            done_time: None,
             tags: Vec::<String>::new(),
             state: crate::issue::State::InProgress,
             dependencies: None,
@@ -112,6 +113,7 @@ mod tests {
                 creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                     .unwrap()
                     .with_timezone(&chrono::Local),
+                done_time: None,
                 tags: Vec::<String>::from([
                     String::from("tag1"),
                     String::from("TAG2"),
@@ -144,6 +146,11 @@ mod tests {
             creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T11:59:44-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
+            done_time: Some(
+                chrono::DateTime::parse_from_rfc3339("2025-07-15T15:15:15-06:00")
+                    .unwrap()
+                    .with_timezone(&chrono::Local),
+            ),
             tags: Vec::<String>::new(),
             state: crate::issue::State::Done,
             dependencies: None,
@@ -177,6 +184,7 @@ mod tests {
                 creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T11:59:44-06:00")
                     .unwrap()
                     .with_timezone(&chrono::Local),
+                done_time: None,
                 tags: Vec::<String>::new(),
                 state: crate::issue::State::WontDo,
                 dependencies: None,
@@ -205,6 +213,7 @@ mod tests {
             creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
+            done_time: None,
             tags: Vec::<String>::new(),
             state: crate::issue::State::Done,
             dependencies: None,
@@ -224,6 +233,7 @@ mod tests {
                 creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
                     .unwrap()
                     .with_timezone(&chrono::Local),
+                done_time: None,
                 tags: Vec::<String>::new(),
                 state: crate::issue::State::WontDo,
                 dependencies: None,
@@ -244,6 +254,7 @@ mod tests {
                 creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
                     .unwrap()
                     .with_timezone(&chrono::Local),
+                done_time: None,
                 tags: Vec::<String>::new(),
                 state: crate::issue::State::WontDo,
                 dependencies: Some(vec![

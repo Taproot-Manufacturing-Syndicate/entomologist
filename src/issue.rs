@@ -23,6 +23,7 @@ pub struct Issue {
     pub id: String,
     pub author: String,
     pub creation_time: chrono::DateTime<chrono::Local>,
+    pub done_time: Option<chrono::DateTime<chrono::Local>>,
     pub tags: Vec<String>,
     pub state: State,
     pub dependencies: Option<Vec<IssueHandle>>,
@@ -43,6 +44,8 @@ pub enum IssueError {
     EnvVarError(#[from] std::env::VarError),
     #[error(transparent)]
     CommentError(#[from] crate::comment::CommentError),
+    #[error(transparent)]
+    ChronoParseError(#[from] chrono::format::ParseError),
     #[error("Failed to parse issue")]
     IssueParseError,
     #[error("Failed to parse state")]
@@ -106,6 +109,7 @@ impl Issue {
         let mut comments = Vec::<crate::comment::Comment>::new();
         let mut assignee: Option<String> = None;
         let mut tags = Vec::<String>::new();
+        let mut done_time: Option<chrono::DateTime<chrono::Local>> = None;
 
         for direntry in dir.read_dir()? {
             if let Ok(direntry) = direntry {
@@ -119,6 +123,11 @@ impl Issue {
                     assignee = Some(String::from(
                         std::fs::read_to_string(direntry.path())?.trim(),
                     ));
+                } else if file_name == "done_time" {
+                    let raw_done_time = chrono::DateTime::<_>::parse_from_rfc3339(
+                        std::fs::read_to_string(direntry.path())?.trim(),
+                    )?;
+                    done_time = Some(raw_done_time.into());
                 } else if file_name == "dependencies" {
                     let dep_strings = std::fs::read_to_string(direntry.path())?;
                     let deps: Vec<IssueHandle> = dep_strings
@@ -165,6 +174,7 @@ impl Issue {
             id,
             author,
             creation_time,
+            done_time,
             tags,
             state: state,
             dependencies,
@@ -221,6 +231,7 @@ impl Issue {
             id: String::from(&issue_id),
             author: String::from(""),
             creation_time: chrono::Local::now(),
+            done_time: None,
             tags: Vec::<String>::new(),
             state: State::New,
             dependencies: None,
@@ -453,6 +464,7 @@ mod tests {
             creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
+            done_time: None,
             tags: Vec::<String>::from([
                 String::from("tag1"),
                 String::from("TAG2"),
@@ -480,6 +492,7 @@ mod tests {
             creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
+            done_time: None,
             tags: Vec::<String>::new(),
             state: State::InProgress,
             dependencies: None,
