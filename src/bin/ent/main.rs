@@ -203,6 +203,7 @@ fn handle_command(
                 }
                 Ok(issue) => {
                     println!("created new issue '{}'", issue.title());
+                    println!("ID: {}", issue.id);
                     return Ok(());
                 }
             }
