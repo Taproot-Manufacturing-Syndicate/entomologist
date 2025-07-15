@@ -1,0 +1,3 @@
+include issue ID in the issue
+
+currently the issue ID is not contained by the issue data structure. update the issue data structure so it contains the issue ID. 
