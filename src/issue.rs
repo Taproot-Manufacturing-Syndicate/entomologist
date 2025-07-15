@@ -283,7 +283,8 @@ impl Issue {
         }
     }
 
-    /// Change the State of the Issue.
+    /// Change the State of the Issue.  If the new state is `Done`,
+    /// set the Issue `done_time`.  Commits.
     pub fn set_state(&mut self, new_state: State) -> Result<(), IssueError> {
         let old_state = self.state.clone();
         let mut state_filename = std::path::PathBuf::from(&self.dir);
@@ -296,6 +297,9 @@ impl Issue {
             old_state,
             new_state,
         ))?;
+        if new_state == State::Done {
+            self.set_done_time(chrono::Local::now())?;
+        }
         Ok(())
     }
 
@@ -304,6 +308,24 @@ impl Issue {
         state_filename.push("state");
         let state_string = std::fs::read_to_string(state_filename)?;
         self.state = State::from_str(state_string.trim())?;
+        Ok(())
+    }
+
+    /// Set the `done_time` of the Issue.  Commits.
+    pub fn set_done_time(
+        &mut self,
+        done_time: chrono::DateTime<chrono::Local>,
+    ) -> Result<(), IssueError> {
+        let mut done_time_filename = std::path::PathBuf::from(&self.dir);
+        done_time_filename.push("done_time");
+        let mut done_time_file = std::fs::File::create(&done_time_filename)?;
+        write!(done_time_file, "{}", done_time.to_rfc3339())?;
+        self.done_time = Some(done_time.clone());
+        self.commit(&format!(
+            "set done-time of issue {} to {}",
+            self.dir.file_name().unwrap().to_string_lossy(),
+            done_time,
+        ))?;
         Ok(())
     }
 

@@ -86,6 +86,12 @@ enum Commands {
         #[arg(allow_hyphen_values = true)]
         tag: Option<String>,
     },
+
+    /// Get or set the `done_time` of the Issue.
+    DoneTime {
+        issue_id: String,
+        done_time: Option<String>,
+    },
 }
 
 fn handle_command(
@@ -263,6 +269,9 @@ fn handle_command(
                     println!("issue {}", issue_id);
                     println!("author: {}", issue.author);
                     println!("creation_time: {}", issue.creation_time);
+                    if let Some(done_time) = &issue.done_time {
+                        println!("done_time: {}", done_time);
+                    }
                     println!("state: {:?}", issue.state);
                     if let Some(dependencies) = &issue.dependencies {
                         println!("dependencies: {:?}", dependencies);
@@ -447,6 +456,38 @@ fn handle_command(
                     }
                 }
             }
+        }
+
+        Commands::DoneTime {
+            issue_id,
+            done_time,
+        } => {
+            let issues = entomologist::database::read_issues_database(issues_database_source)?;
+            let Some(issue) = issues.issues.get(issue_id) else {
+                return Err(anyhow::anyhow!("issue {} not found", issue_id));
+            };
+            match done_time {
+                Some(done_time) => {
+                    // Add or remove tag.
+                    let issues_database = entomologist::database::make_issues_database(
+                        issues_database_source,
+                        entomologist::database::IssuesDatabaseAccess::ReadWrite,
+                    )?;
+                    let mut issues =
+                        entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+                    let Some(issue) = issues.get_mut_issue(issue_id) else {
+                        return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                    };
+                    let done_time = chrono::DateTime::parse_from_rfc3339(done_time)
+                        .unwrap()
+                        .with_timezone(&chrono::Local);
+                    issue.set_done_time(done_time)?;
+                }
+                None => match &issue.done_time {
+                    Some(done_time) => println!("done_time: {}", done_time),
+                    None => println!("None"),
+                },
+            };
         }
     }
 
