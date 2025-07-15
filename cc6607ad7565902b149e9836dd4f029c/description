@@ -1,0 +1,10 @@
+commands
+
+allow calling commands from the TUI. commands that open an editor will open the system editor and then return to the TUI when complete. 
+
+- [ ] new
+- [ ] edit
+- [ ] commant
+- [ ] state
+- [ ] assign
+- [ ] ...?  

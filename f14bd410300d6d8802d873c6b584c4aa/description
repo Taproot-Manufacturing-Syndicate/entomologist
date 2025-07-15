@@ -1,0 +1,4 @@
+make `ent new` output issue ID
+
+
+when the `ent new` command is invoked, it should also return the issue ID to STDOUT
