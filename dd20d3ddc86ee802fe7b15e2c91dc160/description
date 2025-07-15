@@ -1,0 +1,10 @@
+store tags as a dir of files, not a file of lines
+
+Currently we store all tags in a file (named `tags`) in the Issue dir.
+The `tags` file has a line per tag.
+
+This is bad because `ent sync` will get a git merge conflict if we add
+or remove a tag near where someone else added or removed a tag.
+
+Better to have a `tags` a directory, with an empty file per tag.
+The filename is the tag.  This use is conflict free in git.
