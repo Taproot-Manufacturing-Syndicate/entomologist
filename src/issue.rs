@@ -243,8 +243,7 @@ impl Issue {
             None => issue.edit_description_file()?,
         };
 
-        crate::git::add(&issue_dir)?;
-        crate::git::commit(&issue_dir, &format!("create new issue {}", issue_id))?;
+        issue.commit(&format!("create new issue {}", issue_id))?;
 
         Ok(issue)
     }
@@ -253,21 +252,15 @@ impl Issue {
     pub fn edit_description(&mut self) -> Result<(), IssueError> {
         self.edit_description_file()?;
         let description_filename = self.description_filename();
-        crate::git::add(&description_filename)?;
-        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
-            crate::git::commit(
-                &description_filename.parent().unwrap(),
-                &format!(
-                    "edit description of issue {}",
-                    description_filename
-                        .parent()
-                        .unwrap()
-                        .file_name()
-                        .unwrap()
-                        .to_string_lossy()
-                ),
-            )?;
-        }
+        self.commit(&format!(
+            "edit description of issue {}",
+            description_filename
+                .parent()
+                .unwrap()
+                .file_name()
+                .unwrap()
+                .to_string_lossy(),
+        ))?;
         Ok(())
     }
 
@@ -286,18 +279,12 @@ impl Issue {
         state_filename.push("state");
         let mut state_file = std::fs::File::create(&state_filename)?;
         write!(state_file, "{}", new_state)?;
-        crate::git::add(&state_filename)?;
-        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
-            crate::git::commit(
-                &self.dir,
-                &format!(
-                    "change state of issue {}, {} -> {}",
-                    self.dir.file_name().unwrap().to_string_lossy(),
-                    old_state,
-                    new_state,
-                ),
-            )?;
-        }
+        self.commit(&format!(
+            "change state of issue {}, {} -> {}",
+            self.dir.file_name().unwrap().to_string_lossy(),
+            old_state,
+            new_state,
+        ))?;
         Ok(())
     }
 
@@ -319,18 +306,12 @@ impl Issue {
         assignee_filename.push("assignee");
         let mut assignee_file = std::fs::File::create(&assignee_filename)?;
         write!(assignee_file, "{}", new_assignee)?;
-        crate::git::add(&assignee_filename)?;
-        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
-            crate::git::commit(
-                &self.dir,
-                &format!(
-                    "change assignee of issue {}, {} -> {}",
-                    self.dir.file_name().unwrap().to_string_lossy(),
-                    old_assignee,
-                    new_assignee,
-                ),
-            )?;
-        }
+        self.commit(&format!(
+            "change assignee of issue {}, {} -> {}",
+            self.dir.file_name().unwrap().to_string_lossy(),
+            old_assignee,
+            new_assignee,
+        ))?;
         Ok(())
     }
 
@@ -444,7 +425,15 @@ impl Issue {
         for tag in &self.tags {
             writeln!(tags_file, "{}", tag)?;
         }
-        crate::git::add(&tags_filename)?;
+        self.commit(commit_message)?;
+        Ok(())
+    }
+
+    fn commit(&self, commit_message: &str) -> Result<(), IssueError> {
+        crate::git::add(&self.dir)?;
+        if !crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
+            return Ok(());
+        }
         crate::git::commit(&self.dir, commit_message)?;
         Ok(())
     }
