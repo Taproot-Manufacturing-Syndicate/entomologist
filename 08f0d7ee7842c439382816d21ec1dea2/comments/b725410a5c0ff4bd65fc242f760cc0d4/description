@@ -1,0 +1,44 @@
+I like the idea of a layered architecture, with a db layer that manages
+filesystem i/o.
+
+
+# API
+
+* Read a filesystem object into a struct Issue (e.g. `ent show`)
+
+* Write a whole struct Issue into a filesystem object (e.g. `ent new`
+  or `ent comment`).
+
+* Write a single field from a struct Issue into an existing filesystem
+  object (e.g. `ent state ISSUE Done`).
+
+On write operations, the git commit message should be meaningful to
+the application.  Maybe that can be done generically by the db library,
+or maybe the application needs to supply the commit message.
+
+
+# Design
+
+A filesystem stores two kinds of things: directories and files.
+A directory contains files, and other directories.
+
+Git stores two kinds of things: trees and blobs.  Trees contain blobs,
+and other trees.
+
+Maybe this DB tracks two kinds of things: databases and key/value objects.
+Databases store key/value objects, and other databases.
+
+Some things we'd want from this DB layer:
+
+* Filesystem objects correspond to structs, like how we have each struct
+  Issue in its own issue directory.
+
+* Structs are nested, like how struct Issue contains struct Comment
+
+* Some fields are simple types (`author` is String), some are
+  less simple (`timestamp` is chrono::DateTime), some are custom
+  (`state` is enum State), and some are complicated (`dependencies`
+  is Option<Vec<IssueHandle>>, `comments` is Vec<Comment>)
+
+* Filesystem objects are optimized for getting tracked by git - minimize
+  merge conflicts.
