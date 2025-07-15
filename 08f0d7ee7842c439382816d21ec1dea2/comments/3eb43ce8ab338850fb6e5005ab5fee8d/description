@@ -1,0 +1,26 @@
+maybe there's a delineation that's starting to be drawn here between an "issue" and what the database on the backend uses. 
+
+for the filesystem DB, i think it might make sense to have a hashmap that stores everything as a key-value pair, where each key is a file, and each value is the contents of that file. 
+
+once we go up the stack, i think it makes sense to have things in concrete structs, since that's easier to reason about. 
+
+this also frees up the filesystem DB to get used for other things potentially, not just issues. 
+
+so you'd have a system where 
+
+```
+filesystem
+^
+|
+v
+db layer: key/value pair
+^
+|
+v
+application layer: concrete structs (like `Issue` etc) 
+^
+|
+v
+presentation layer: (CLI / TUI / etc.) 
+```
+
