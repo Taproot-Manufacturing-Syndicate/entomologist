@@ -155,7 +155,7 @@ fn handle_command(
                 these_uuids.sort_by(|a_id, b_id| {
                     let a = issues.issues.get(*a_id).unwrap();
                     let b = issues.issues.get(*b_id).unwrap();
-                    a.timestamp.cmp(&b.timestamp)
+                    a.creation_time.cmp(&b.creation_time)
                 });
                 println!("{:?}:", state);
                 for uuid in these_uuids {
@@ -262,7 +262,7 @@ fn handle_command(
                 Some(issue) => {
                     println!("issue {}", issue_id);
                     println!("author: {}", issue.author);
-                    println!("timestamp: {}", issue.timestamp);
+                    println!("creation_time: {}", issue.creation_time);
                     println!("state: {:?}", issue.state);
                     if let Some(dependencies) = &issue.dependencies {
                         println!("dependencies: {:?}", dependencies);
@@ -276,7 +276,7 @@ fn handle_command(
                         println!("");
                         println!("comment: {}", comment.uuid);
                         println!("author: {}", comment.author);
-                        println!("timestamp: {}", comment.timestamp);
+                        println!("creation_time: {}", comment.creation_time);
                         println!("");
                         println!("{}", comment.description);
                     }

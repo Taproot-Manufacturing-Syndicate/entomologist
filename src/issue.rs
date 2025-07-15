@@ -22,7 +22,7 @@ pub type IssueHandle = String;
 pub struct Issue {
     pub id: String,
     pub author: String,
-    pub timestamp: chrono::DateTime<chrono::Local>,
+    pub creation_time: chrono::DateTime<chrono::Local>,
     pub tags: Vec<String>,
     pub state: State,
     pub dependencies: Option<Vec<IssueHandle>>,
@@ -159,12 +159,12 @@ impl Issue {
         };
 
         let author = crate::git::git_log_oldest_author(dir)?;
-        let timestamp = crate::git::git_log_oldest_timestamp(dir)?;
+        let creation_time = crate::git::git_log_oldest_timestamp(dir)?;
 
         Ok(Self {
             id,
             author,
-            timestamp,
+            creation_time,
             tags,
             state: state,
             dependencies,
@@ -185,7 +185,7 @@ impl Issue {
                 comments.push(comment);
             }
         }
-        comments.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        comments.sort_by(|a, b| a.creation_time.cmp(&b.creation_time));
         Ok(())
     }
 
@@ -220,7 +220,7 @@ impl Issue {
         let mut issue = Self {
             id: String::from(&issue_id),
             author: String::from(""),
-            timestamp: chrono::Local::now(),
+            creation_time: chrono::Local::now(),
             tags: Vec::<String>::new(),
             state: State::New,
             dependencies: None,
@@ -450,7 +450,7 @@ mod tests {
         let expected = Issue {
             id: String::from("3943fc5c173fdf41c0a22251593cd476d96e6c9f"),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
             tags: Vec::<String>::from([
@@ -477,7 +477,7 @@ mod tests {
         let expected = Issue {
             id: String::from("7792b063eef6d33e7da5dc1856750c149ba678c6"),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
             tags: Vec::<String>::new(),

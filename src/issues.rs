@@ -90,7 +90,7 @@ mod tests {
         expected.add_issue(crate::issue::Issue {
             id: uuid,
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
             tags: Vec::<String>::new(),
@@ -109,7 +109,7 @@ mod tests {
             crate::issue::Issue {
                 id: uuid,
                 author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 tags: Vec::<String>::from([
@@ -141,7 +141,7 @@ mod tests {
         expected.add_issue(crate::issue::Issue {
             id: uuid,
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T11:59:44-06:00")
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T11:59:44-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
             tags: Vec::<String>::new(),
@@ -165,7 +165,7 @@ mod tests {
             crate::comment::Comment {
                 uuid: comment_uuid,
                 author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-07T15:26:26-06:00").unwrap().with_timezone(&chrono::Local),
+                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-07T15:26:26-06:00").unwrap().with_timezone(&chrono::Local),
                 description: String::from("This is a comment on issue dd79c8cfb8beeacd0460429944b4ecbe95a31561\n\nIt has multiple lines\n"),
                 dir: std::path::PathBuf::from(comment_dir),
             }
@@ -174,7 +174,7 @@ mod tests {
             crate::issue::Issue {
                 id: uuid,
                 author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T11:59:44-06:00")
+                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T11:59:44-06:00")
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 tags: Vec::<String>::new(),
@@ -202,7 +202,7 @@ mod tests {
         expected.add_issue(crate::issue::Issue {
             id: uuid,
             author: String::from("sigil-03 <sigil@glyphs.tech>"),
-            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
             tags: Vec::<String>::new(),
@@ -221,7 +221,7 @@ mod tests {
             crate::issue::Issue {
                 id: uuid,
                 author: String::from("sigil-03 <sigil@glyphs.tech>"),
-                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
+                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 tags: Vec::<String>::new(),
@@ -241,7 +241,7 @@ mod tests {
             crate::issue::Issue {
                 id: uuid,
                 author: String::from("sigil-03 <sigil@glyphs.tech>"),
-                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
+                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 tags: Vec::<String>::new(),
