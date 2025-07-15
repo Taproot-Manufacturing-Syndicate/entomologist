@@ -1,3 +1,13 @@
-add TUI binary
+TUI v0.1
 
 build a TUI binary for ent which mirrors the CLI functionality
+
+- [ ] issues list
+    - [ ] filtering(?)
+- [x] show issue preview
+- [x] show issue detail
+- [ ] commands
+    - [ ] new ($EDITOR)
+    - [ ] edit ($EDITOR)
+    - [ ] comment ($EDITOR)
+    - [ ] state
