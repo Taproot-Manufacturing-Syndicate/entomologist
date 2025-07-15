@@ -20,6 +20,7 @@ pub type IssueHandle = String;
 
 #[derive(Debug, PartialEq)]
 pub struct Issue {
+    pub id: String,
     pub author: String,
     pub timestamp: chrono::DateTime<chrono::Local>,
     pub tags: Vec<String>,
@@ -56,6 +57,8 @@ pub enum IssueError {
     TagNotFound(String),
     #[error("stdin/stdout is not a terminal")]
     StdioIsNotTerminal,
+    #[error("Failed to parse issue ID")]
+    IdError,
 }
 
 impl FromStr for State {
@@ -145,10 +148,21 @@ impl Issue {
             return Err(IssueError::IssueParseError);
         }
 
+        // parse the issue ID from the directory name
+        let id = if let Some(parsed_id) = match dir.file_name() {
+            Some(name) => name.to_str(),
+            None => Err(IssueError::IdError)?,
+        } {
+            String::from(parsed_id)
+        } else {
+            Err(IssueError::IdError)?
+        };
+
         let author = crate::git::git_log_oldest_author(dir)?;
         let timestamp = crate::git::git_log_oldest_timestamp(dir)?;
 
         Ok(Self {
+            id,
             author,
             timestamp,
             tags,
@@ -204,6 +218,7 @@ impl Issue {
         std::fs::create_dir(&issue_dir)?;
 
         let mut issue = Self {
+            id: String::from(&issue_id),
             author: String::from(""),
             timestamp: chrono::Local::now(),
             tags: Vec::<String>::new(),
@@ -444,6 +459,7 @@ mod tests {
         let issue_dir = std::path::Path::new("test/0000/3943fc5c173fdf41c0a22251593cd476d96e6c9f/");
         let issue = Issue::new_from_dir(issue_dir).unwrap();
         let expected = Issue {
+            id: String::from("3943fc5c173fdf41c0a22251593cd476d96e6c9f"),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
             timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
@@ -451,12 +467,14 @@ mod tests {
             tags: Vec::<String>::from([
                 String::from("tag1"),
                 String::from("TAG2"),
-                String::from("i-am-also-a-tag")
+                String::from("i-am-also-a-tag"),
             ]),
             state: State::New,
             dependencies: None,
             assignee: None,
-            description: String::from("this is the title of my issue\n\nThis is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n"),
+            description: String::from(
+                "this is the title of my issue\n\nThis is the description of my issue.\nIt is multiple lines.\n* Arbitrary contents\n* But let's use markdown by convention\n",
+            ),
             comments: Vec::<crate::comment::Comment>::new(),
             dir: std::path::PathBuf::from(issue_dir),
         };
@@ -468,6 +486,7 @@ mod tests {
         let issue_dir = std::path::Path::new("test/0000/7792b063eef6d33e7da5dc1856750c149ba678c6/");
         let issue = Issue::new_from_dir(issue_dir).unwrap();
         let expected = Issue {
+            id: String::from("7792b063eef6d33e7da5dc1856750c149ba678c6"),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
             timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
