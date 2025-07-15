@@ -31,8 +31,8 @@ impl Issues {
         }
     }
 
-    pub fn add_issue(&mut self, uuid: String, issue: crate::issue::Issue) {
-        self.issues.insert(uuid, issue);
+    pub fn add_issue(&mut self, issue: crate::issue::Issue) {
+        self.issues.insert(issue.id.clone(), issue);
     }
 
     pub fn get_issue(&self, issue_id: &str) -> Option<&crate::issue::Issue> {
@@ -56,14 +56,8 @@ impl Issues {
         for direntry in dir.read_dir()? {
             if let Ok(direntry) = direntry {
                 if direntry.metadata()?.is_dir() {
-                    let uuid = match direntry.file_name().into_string() {
-                        Ok(uuid) => uuid,
-                        Err(orig_string) => {
-                            return Err(ReadIssuesError::FilenameError(orig_string))
-                        }
-                    };
                     let issue = crate::issue::Issue::new_from_dir(direntry.path().as_path())?;
-                    issues.add_issue(uuid, issue);
+                    issues.add_issue(issue);
                 } else if direntry.file_name() == "config.toml" {
                     issues.parse_config(direntry.path().as_path())?;
                 } else {
@@ -93,29 +87,27 @@ mod tests {
         let uuid = String::from("7792b063eef6d33e7da5dc1856750c149ba678c6");
         let mut dir = std::path::PathBuf::from(issues_dir);
         dir.push(&uuid);
-        expected.add_issue(
-            uuid,
-            crate::issue::Issue {
-                author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
-                    .unwrap()
-                    .with_timezone(&chrono::Local),
-                tags: Vec::<String>::new(),
-                state: crate::issue::State::InProgress,
-                dependencies: None,
-                assignee: Some(String::from("beep boop")),
-                description: String::from("minimal"),
-                comments: Vec::<crate::comment::Comment>::new(),
-                dir,
-            },
-        );
+        expected.add_issue(crate::issue::Issue {
+            id: uuid,
+            author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
+            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+                .unwrap()
+                .with_timezone(&chrono::Local),
+            tags: Vec::<String>::new(),
+            state: crate::issue::State::InProgress,
+            dependencies: None,
+            assignee: Some(String::from("beep boop")),
+            description: String::from("minimal"),
+            comments: Vec::<crate::comment::Comment>::new(),
+            dir,
+        });
 
         let uuid = String::from("3943fc5c173fdf41c0a22251593cd476d96e6c9f");
         let mut dir = std::path::PathBuf::from(issues_dir);
         dir.push(&uuid);
         expected.add_issue(
-            uuid,
             crate::issue::Issue {
+                id: uuid,
                 author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
                 timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                     .unwrap()
@@ -146,22 +138,20 @@ mod tests {
         let uuid = String::from("3fa5bfd93317ad25772680071d5ac3259cd2384f");
         let mut dir = std::path::PathBuf::from(issues_dir);
         dir.push(&uuid);
-        expected.add_issue(
-            uuid,
-            crate::issue::Issue {
-                author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T11:59:44-06:00")
-                    .unwrap()
-                    .with_timezone(&chrono::Local),
-                tags: Vec::<String>::new(),
-                state: crate::issue::State::Done,
-                dependencies: None,
-                assignee: None,
-                description: String::from("oh yeah we got titles"),
-                comments: Vec::<crate::comment::Comment>::new(),
-                dir,
-            },
-        );
+        expected.add_issue(crate::issue::Issue {
+            id: uuid,
+            author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
+            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T11:59:44-06:00")
+                .unwrap()
+                .with_timezone(&chrono::Local),
+            tags: Vec::<String>::new(),
+            state: crate::issue::State::Done,
+            dependencies: None,
+            assignee: None,
+            description: String::from("oh yeah we got titles"),
+            comments: Vec::<crate::comment::Comment>::new(),
+            dir,
+        });
 
         let uuid = String::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561");
         let mut dir = std::path::PathBuf::from(issues_dir);
@@ -181,8 +171,8 @@ mod tests {
             }
         );
         expected.add_issue(
-            uuid,
             crate::issue::Issue {
+                id: uuid,
                 author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
                 timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T11:59:44-06:00")
                     .unwrap()
@@ -209,29 +199,27 @@ mod tests {
         let uuid = String::from("3fa5bfd93317ad25772680071d5ac3259cd2384f");
         let mut dir = std::path::PathBuf::from(issues_dir);
         dir.push(&uuid);
-        expected.add_issue(
-            uuid,
-            crate::issue::Issue {
-                author: String::from("sigil-03 <sigil@glyphs.tech>"),
-                timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
-                    .unwrap()
-                    .with_timezone(&chrono::Local),
-                tags: Vec::<String>::new(),
-                state: crate::issue::State::Done,
-                dependencies: None,
-                assignee: None,
-                description: String::from("oh yeah we got titles\n"),
-                comments: Vec::<crate::comment::Comment>::new(),
-                dir,
-            },
-        );
+        expected.add_issue(crate::issue::Issue {
+            id: uuid,
+            author: String::from("sigil-03 <sigil@glyphs.tech>"),
+            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
+                .unwrap()
+                .with_timezone(&chrono::Local),
+            tags: Vec::<String>::new(),
+            state: crate::issue::State::Done,
+            dependencies: None,
+            assignee: None,
+            description: String::from("oh yeah we got titles\n"),
+            comments: Vec::<crate::comment::Comment>::new(),
+            dir,
+        });
 
         let uuid = String::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561");
         let mut dir = std::path::PathBuf::from(issues_dir);
         dir.push(&uuid);
         expected.add_issue(
-            uuid,
             crate::issue::Issue {
+                id: uuid,
                 author: String::from("sigil-03 <sigil@glyphs.tech>"),
                 timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
                     .unwrap()
@@ -250,8 +238,8 @@ mod tests {
         let mut dir = std::path::PathBuf::from(issues_dir);
         dir.push(&uuid);
         expected.add_issue(
-            uuid,
             crate::issue::Issue {
+                id: uuid,
                 author: String::from("sigil-03 <sigil@glyphs.tech>"),
                 timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
                     .unwrap()
