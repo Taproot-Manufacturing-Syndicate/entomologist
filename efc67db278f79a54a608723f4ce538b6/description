@@ -1,0 +1,4 @@
+smart ui scaling
+
+some thoughts:
+make the preview pane hide under issues pane until task is selected when terminal size is too small to display both
