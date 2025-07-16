@@ -1,0 +1,7 @@
+linking
+
+allows users to follow embedded links to other `ent` content, etc. directly from the TUI
+
+- allow users to follow comment / issue / etc. 
+- allow users to follow links
+- allow users to open files(?)
