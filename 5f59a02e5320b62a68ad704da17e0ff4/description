@@ -1,0 +1,3 @@
+add `ent update`
+
+allow `ent` to update itself when commanded to
