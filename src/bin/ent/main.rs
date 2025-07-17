@@ -41,6 +41,13 @@ enum Commands {
         /// if prefixed with "-".  Example: "tag=bug,-docs" shows issues
         /// that are tagged "bug" and not tagged "docs".  Defaults to
         /// including all tags and excluding none.
+        ///
+        /// "done-time": Time range of issue completion, in the form
+        /// "[START]..[END]".  Includes issues that were marked Done
+        /// between START and END.  START and END are both in RFC 3339
+        /// format, e.g. "YYYY-MM-DDTHH:MM:SS[+-]HH:MM".  If START
+        /// is omitted, defaults to the beginning of time.  If END is
+        /// omitted, defaults to the end of time.
         filter: Vec<String>,
     },
 
@@ -135,6 +142,19 @@ fn handle_command(
                 if filter.exclude_tags.len() > 0 {
                     if issue.has_any_tag(&filter.exclude_tags) {
                         continue;
+                    }
+                }
+
+                if let Some(issue_done_time) = issue.done_time {
+                    if let Some(start_done_time) = filter.start_done_time {
+                        if start_done_time > issue_done_time {
+                            continue;
+                        }
+                    }
+                    if let Some(end_done_time) = filter.end_done_time {
+                        if end_done_time < issue_done_time {
+                            continue;
+                        }
                     }
                 }
 

@@ -14,6 +14,8 @@ pub enum ParseFilterError {
     ParseError,
     #[error(transparent)]
     IssueParseError(#[from] crate::issue::IssueError),
+    #[error(transparent)]
+    ChronoParseError(#[from] chrono::format::ParseError),
 }
 
 // FIXME: It's easy to imagine a full dsl for filtering issues, for now
@@ -25,6 +27,8 @@ pub struct Filter<'a> {
     pub include_assignees: std::collections::HashSet<&'a str>,
     pub include_tags: std::collections::HashSet<&'a str>,
     pub exclude_tags: std::collections::HashSet<&'a str>,
+    pub start_done_time: Option<chrono::DateTime<chrono::Local>>,
+    pub end_done_time: Option<chrono::DateTime<chrono::Local>>,
 }
 
 impl<'a> Filter<'a> {
@@ -39,6 +43,8 @@ impl<'a> Filter<'a> {
             include_assignees: std::collections::HashSet::<&'a str>::new(),
             include_tags: std::collections::HashSet::<&'a str>::new(),
             exclude_tags: std::collections::HashSet::<&'a str>::new(),
+            start_done_time: None,
+            end_done_time: None,
         }
     }
 
@@ -76,6 +82,27 @@ impl<'a> Filter<'a> {
                     } else {
                         self.include_tags.insert(s);
                     }
+                }
+            }
+
+            "done-time" => {
+                self.start_done_time = None;
+                self.end_done_time = None;
+                let times: Vec<&str> = tokens[1].split("..").collect();
+                if times.len() > 2 {
+                    return Err(ParseFilterError::ParseError);
+                }
+                if times[0].len() != 0 {
+                    self.start_done_time = Some(
+                        chrono::DateTime::parse_from_rfc3339(times[0])?
+                            .with_timezone(&chrono::Local),
+                    );
+                }
+                if times[1].len() != 0 {
+                    self.end_done_time = Some(
+                        chrono::DateTime::parse_from_rfc3339(times[1])?
+                            .with_timezone(&chrono::Local),
+                    );
                 }
             }
 
