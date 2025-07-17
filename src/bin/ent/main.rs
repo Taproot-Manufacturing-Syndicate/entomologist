@@ -24,22 +24,24 @@ struct Args {
 enum Commands {
     /// List issues.
     List {
-        /// Filter string, describes issues to include in the list.
-        /// The filter string is composed of chunks separated by ":".
-        /// Each chunk is of the form "name=condition".  The supported
-        /// names and their matching conditions are:
+        /// Filter strings, describes issues to include in the list.
+        /// Each filter string is of the form "name=condition".
+        /// The supported names and their matching conditions are:
         ///
         /// "state": Comma-separated list of states to list.
+        /// Example: "state=new,backlog".  Defaults to
+        /// "new,backlog,blocked,inprogress".
         ///
-        /// "assignee": Comma-separated list of assignees to list.
-        /// Defaults to all assignees if not set.
+        /// "assignee": Comma-separated list of assignees to include in
+        /// the list.  The empty string includes issues with no assignee.
+        /// Example: "assignee=seb," lists issues assigned to "seb" and
+        /// issues without an assignee.  Defaults to include all issues.
         ///
-        /// "tag": Comma-separated list of tags to include or exclude
-        /// (if prefixed with "-").  If omitted, defaults to including
-        /// all tags and excluding none.
-        ///
-        #[arg(default_value_t = String::from("state=New,Backlog,Blocked,InProgress"))]
-        filter: String,
+        /// "tag": Comma-separated list of tags to include, or exclude
+        /// if prefixed with "-".  Example: "tag=bug,-docs" shows issues
+        /// that are tagged "bug" and not tagged "docs".  Defaults to
+        /// including all tags and excluding none.
+        filter: Vec<String>,
     },
 
     /// Create a new issue.
@@ -93,7 +95,14 @@ fn handle_command(
     match &args.command {
         Commands::List { filter } => {
             let issues = entomologist::database::read_issues_database(issues_database_source)?;
-            let filter = entomologist::Filter::new_from_str(filter)?;
+            let filter = {
+                let mut f = entomologist::Filter::new();
+                for filter_str in filter {
+                    f.parse(filter_str)?;
+                }
+                f
+            };
+
             let mut uuids_by_state = std::collections::HashMap::<
                 entomologist::issue::State,
                 Vec<&entomologist::issue::IssueHandle>,
@@ -191,8 +200,10 @@ fn handle_command(
         }
 
         Commands::New { description } => {
-            let issues_database =
-                entomologist::database::make_issues_database(issues_database_source, entomologist::database::IssuesDatabaseAccess::ReadWrite)?;
+            let issues_database = entomologist::database::make_issues_database(
+                issues_database_source,
+                entomologist::database::IssuesDatabaseAccess::ReadWrite,
+            )?;
             match entomologist::issue::Issue::new(&issues_database.dir, description) {
                 Err(entomologist::issue::IssueError::EmptyDescription) => {
                     println!("no new issue created");
@@ -209,8 +220,10 @@ fn handle_command(
         }
 
         Commands::Edit { uuid } => {
-            let issues_database =
-                entomologist::database::make_issues_database(issues_database_source, entomologist::database::IssuesDatabaseAccess::ReadWrite)?;
+            let issues_database = entomologist::database::make_issues_database(
+                issues_database_source,
+                entomologist::database::IssuesDatabaseAccess::ReadWrite,
+            )?;
             let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
             if let Some(issue) = issues.get_mut_issue(uuid) {
                 match issue.edit_description() {
@@ -279,8 +292,10 @@ fn handle_command(
             new_state,
         } => match new_state {
             Some(new_state) => {
-                let issues_database =
-                    entomologist::database::make_issues_database(issues_database_source, entomologist::database::IssuesDatabaseAccess::ReadWrite)?;
+                let issues_database = entomologist::database::make_issues_database(
+                    issues_database_source,
+                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
+                )?;
                 let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
                 match issues.issues.get_mut(issue_id) {
                     Some(issue) => {
@@ -312,8 +327,10 @@ fn handle_command(
             issue_id,
             description,
         } => {
-            let issues_database =
-                entomologist::database::make_issues_database(issues_database_source, entomologist::database::IssuesDatabaseAccess::ReadWrite)?;
+            let issues_database = entomologist::database::make_issues_database(
+                issues_database_source,
+                entomologist::database::IssuesDatabaseAccess::ReadWrite,
+            )?;
             let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
             let Some(issue) = issues.get_mut_issue(issue_id) else {
                 return Err(anyhow::anyhow!("issue {} not found", issue_id));
@@ -338,9 +355,13 @@ fn handle_command(
         }
 
         Commands::Sync { remote } => {
-            if let entomologist::database::IssuesDatabaseSource::Branch(branch) = issues_database_source {
-                let issues_database =
-                    entomologist::database::make_issues_database(issues_database_source, entomologist::database::IssuesDatabaseAccess::ReadWrite)?;
+            if let entomologist::database::IssuesDatabaseSource::Branch(branch) =
+                issues_database_source
+            {
+                let issues_database = entomologist::database::make_issues_database(
+                    issues_database_source,
+                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
+                )?;
                 entomologist::git::sync(&issues_database.dir, remote, branch)?;
                 println!("synced {:?} with {:?}", branch, remote);
             } else {
@@ -440,7 +461,9 @@ fn main() -> anyhow::Result<()> {
     // println!("{:?}", args);
 
     let issues_database_source = match (&args.issues_dir, &args.issues_branch) {
-        (Some(dir), None) => entomologist::database::IssuesDatabaseSource::Dir(std::path::Path::new(dir)),
+        (Some(dir), None) => {
+            entomologist::database::IssuesDatabaseSource::Dir(std::path::Path::new(dir))
+        }
         (None, Some(branch)) => entomologist::database::IssuesDatabaseSource::Branch(branch),
         (None, None) => entomologist::database::IssuesDatabaseSource::Branch("entomologist-data"),
         (Some(_), Some(_)) => {

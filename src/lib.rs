@@ -1,10 +1,12 @@
 use std::str::FromStr;
 
 pub mod comment;
+pub mod database;
 pub mod git;
 pub mod issue;
 pub mod issues;
-pub mod database;
+
+use crate::issue::State;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ParseFilterError {
@@ -26,9 +28,8 @@ pub struct Filter<'a> {
 }
 
 impl<'a> Filter<'a> {
-    pub fn new_from_str(filter_str: &'a str) -> Result<Filter<'a>, ParseFilterError> {
-        use crate::issue::State;
-        let mut f = Filter {
+    pub fn new() -> Filter<'a> {
+        Self {
             include_states: std::collections::HashSet::<crate::issue::State>::from([
                 State::InProgress,
                 State::Blocked,
@@ -38,51 +39,52 @@ impl<'a> Filter<'a> {
             include_assignees: std::collections::HashSet::<&'a str>::new(),
             include_tags: std::collections::HashSet::<&'a str>::new(),
             exclude_tags: std::collections::HashSet::<&'a str>::new(),
-        };
+        }
+    }
 
-        for filter_chunk_str in filter_str.split(":") {
-            let tokens: Vec<&str> = filter_chunk_str.split("=").collect();
-            if tokens.len() != 2 {
-                return Err(ParseFilterError::ParseError);
+    pub fn parse(&mut self, filter_str: &'a str) -> Result<(), ParseFilterError> {
+        let tokens: Vec<&str> = filter_str.split("=").collect();
+        if tokens.len() != 2 {
+            return Err(ParseFilterError::ParseError);
+        }
+
+        match tokens[0] {
+            "state" => {
+                self.include_states.clear();
+                for s in tokens[1].split(",") {
+                    self.include_states
+                        .insert(crate::issue::State::from_str(s)?);
+                }
             }
 
-            match tokens[0] {
-                "state" => {
-                    f.include_states.clear();
-                    for s in tokens[1].split(",") {
-                        f.include_states.insert(crate::issue::State::from_str(s)?);
+            "assignee" => {
+                self.include_assignees.clear();
+                for s in tokens[1].split(",") {
+                    self.include_assignees.insert(s);
+                }
+            }
+
+            "tag" => {
+                self.include_tags.clear();
+                self.exclude_tags.clear();
+                for s in tokens[1].split(",") {
+                    if s.len() == 0 {
+                        return Err(ParseFilterError::ParseError);
+                    }
+                    if s.chars().nth(0).unwrap() == '-' {
+                        self.exclude_tags.insert(&s[1..]);
+                    } else {
+                        self.include_tags.insert(s);
                     }
                 }
+            }
 
-                "assignee" => {
-                    f.include_assignees.clear();
-                    for s in tokens[1].split(",") {
-                        f.include_assignees.insert(s);
-                    }
-                }
-
-                "tag" => {
-                    f.include_tags.clear();
-                    f.exclude_tags.clear();
-                    for s in tokens[1].split(",") {
-                        if s.len() == 0 {
-                            return Err(ParseFilterError::ParseError);
-                        }
-                        if s.chars().nth(0).unwrap() == '-' {
-                            f.exclude_tags.insert(&s[1..]);
-                        } else {
-                            f.include_tags.insert(s);
-                        }
-                    }
-                }
-
-                _ => {
-                    println!("unknown filter chunk '{}'", filter_chunk_str);
-                    return Err(ParseFilterError::ParseError);
-                }
+            _ => {
+                println!("unknown filter string '{}'", filter_str);
+                return Err(ParseFilterError::ParseError);
             }
         }
 
-        Ok(f)
+        Ok(())
     }
 }
