@@ -1,0 +1,3 @@
+add updates screen to TUI 
+
+updates pane will allow user to see all updates that occurred on a refresh (with a preview maybe?) and mark them as read 
