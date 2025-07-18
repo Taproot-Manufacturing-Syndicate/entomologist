@@ -1,0 +1,3 @@
+for now, let's just add the ability to mark dependencies, and then later we can build functionality on top of it which allows an application to decide what to do based on the state of those dependencies. 
+
+i think regardless we should always keep the dependencies, unless they get removed intentionally, and should instead operate off of the `state` of those dependencies. 
