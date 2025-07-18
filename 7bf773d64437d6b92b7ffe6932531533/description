@@ -1,0 +1,9 @@
+fix parse error in `ent done-time`
+
+Got this error when i typoed the RFC 3339 time (missing `:` in timezone
+offset):
+    $ ent done-time 8c73c9fd5bc4f551ee5069035ae6e866 2025-07-07T22:29:25-0600
+
+    thread 'main' panicked at src/bin/ent/main.rs:503:26:
+    called `Result::unwrap()` on an `Err` value: ParseError(Invalid)
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
