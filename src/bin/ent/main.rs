@@ -99,6 +99,12 @@ enum Commands {
         issue_id: String,
         done_time: Option<String>,
     },
+
+    /// get or add a dependency to the issue
+    Depend {
+        issue_id: String,
+        dependency_id: Option<String>,
+    },
 }
 
 fn handle_command(
@@ -510,6 +516,43 @@ fn handle_command(
                 },
             };
         }
+
+        Commands::Depend {
+            issue_id,
+            dependency_id,
+        } => match dependency_id {
+            Some(dep_id) => {
+                let ent_db = entomologist::database::make_issues_database(
+                    issues_database_source,
+                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
+                )?;
+                let mut issues = entomologist::issues::Issues::new_from_dir(&ent_db.dir)?;
+                if issues.issues.contains_key(dep_id) {
+                    if let Some(issue) = issues.issues.get_mut(issue_id) {
+                        issue.add_dependency(dep_id.clone())?;
+                    } else {
+                        Err(anyhow::anyhow!("issue {} not found", issue_id))?;
+                    };
+                } else {
+                    Err(anyhow::anyhow!("dependency {} not found", dep_id))?;
+                };
+            }
+            None => {
+                let ent_db = entomologist::database::read_issues_database(issues_database_source)?;
+
+                let Some(issue) = ent_db.issues.get(issue_id) else {
+                    Err(anyhow::anyhow!("issue {} not found", issue_id))?
+                };
+                println!("DEPENDENCIES:");
+                if let Some(list) = &issue.dependencies {
+                    for dependency in list {
+                        println!("{}", dependency);
+                    }
+                } else {
+                    println!("NONE");
+                }
+            }
+        },
     }
 
     Ok(())
@@ -531,7 +574,7 @@ fn main() -> anyhow::Result<()> {
         (Some(_), Some(_)) => {
             return Err(anyhow::anyhow!(
                 "don't specify both `--issues-dir` and `--issues-branch`"
-            ))
+            ));
         }
     };
 
