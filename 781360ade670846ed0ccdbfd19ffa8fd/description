@@ -1,0 +1,15 @@
+add a layer to the architecture with a DB api between the FS and ent?
+
+This issue grew out of the discussion in issue
+08f0d7ee7842c439382816d21ec1dea2.
+
+Currently the entomologist crate code directly reads and writes files
+and calls `git commit` when it wants.  The directory is managed by the
+application, generally as an ephemeral worktree containing a (possibly
+detached) checkout of the `entomologist-data` branch.
+
+We may be able to simplify the ent internals (and the application)
+by adding a "database" API between ent and the filesystem.
+
+There is some preliminary design brainstorming in the issue mentioned
+above.
