@@ -22,7 +22,8 @@ pub type IssueHandle = String;
 pub struct Issue {
     pub id: String,
     pub author: String,
-    pub timestamp: chrono::DateTime<chrono::Local>,
+    pub creation_time: chrono::DateTime<chrono::Local>,
+    pub done_time: Option<chrono::DateTime<chrono::Local>>,
     pub tags: Vec<String>,
     pub state: State,
     pub dependencies: Option<Vec<IssueHandle>>,
@@ -43,6 +44,8 @@ pub enum IssueError {
     EnvVarError(#[from] std::env::VarError),
     #[error(transparent)]
     CommentError(#[from] crate::comment::CommentError),
+    #[error(transparent)]
+    ChronoParseError(#[from] chrono::format::ParseError),
     #[error("Failed to parse issue")]
     IssueParseError,
     #[error("Failed to parse state")]
@@ -106,6 +109,7 @@ impl Issue {
         let mut comments = Vec::<crate::comment::Comment>::new();
         let mut assignee: Option<String> = None;
         let mut tags = Vec::<String>::new();
+        let mut done_time: Option<chrono::DateTime<chrono::Local>> = None;
 
         for direntry in dir.read_dir()? {
             if let Ok(direntry) = direntry {
@@ -119,6 +123,11 @@ impl Issue {
                     assignee = Some(String::from(
                         std::fs::read_to_string(direntry.path())?.trim(),
                     ));
+                } else if file_name == "done_time" {
+                    let raw_done_time = chrono::DateTime::<_>::parse_from_rfc3339(
+                        std::fs::read_to_string(direntry.path())?.trim(),
+                    )?;
+                    done_time = Some(raw_done_time.into());
                 } else if file_name == "dependencies" {
                     let dep_strings = std::fs::read_to_string(direntry.path())?;
                     let deps: Vec<IssueHandle> = dep_strings
@@ -159,12 +168,13 @@ impl Issue {
         };
 
         let author = crate::git::git_log_oldest_author(dir)?;
-        let timestamp = crate::git::git_log_oldest_timestamp(dir)?;
+        let creation_time = crate::git::git_log_oldest_timestamp(dir)?;
 
         Ok(Self {
             id,
             author,
-            timestamp,
+            creation_time,
+            done_time,
             tags,
             state: state,
             dependencies,
@@ -185,7 +195,7 @@ impl Issue {
                 comments.push(comment);
             }
         }
-        comments.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        comments.sort_by(|a, b| a.creation_time.cmp(&b.creation_time));
         Ok(())
     }
 
@@ -220,7 +230,8 @@ impl Issue {
         let mut issue = Self {
             id: String::from(&issue_id),
             author: String::from(""),
-            timestamp: chrono::Local::now(),
+            creation_time: chrono::Local::now(),
+            done_time: None,
             tags: Vec::<String>::new(),
             state: State::New,
             dependencies: None,
@@ -243,8 +254,7 @@ impl Issue {
             None => issue.edit_description_file()?,
         };
 
-        crate::git::add(&issue_dir)?;
-        crate::git::commit(&issue_dir, &format!("create new issue {}", issue_id))?;
+        issue.commit(&format!("create new issue {}", issue_id))?;
 
         Ok(issue)
     }
@@ -253,21 +263,15 @@ impl Issue {
     pub fn edit_description(&mut self) -> Result<(), IssueError> {
         self.edit_description_file()?;
         let description_filename = self.description_filename();
-        crate::git::add(&description_filename)?;
-        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
-            crate::git::commit(
-                &description_filename.parent().unwrap(),
-                &format!(
-                    "edit description of issue {}",
-                    description_filename
-                        .parent()
-                        .unwrap()
-                        .file_name()
-                        .unwrap()
-                        .to_string_lossy()
-                ),
-            )?;
-        }
+        self.commit(&format!(
+            "edit description of issue {}",
+            description_filename
+                .parent()
+                .unwrap()
+                .file_name()
+                .unwrap()
+                .to_string_lossy(),
+        ))?;
         Ok(())
     }
 
@@ -279,24 +283,22 @@ impl Issue {
         }
     }
 
-    /// Change the State of the Issue.
+    /// Change the State of the Issue.  If the new state is `Done`,
+    /// set the Issue `done_time`.  Commits.
     pub fn set_state(&mut self, new_state: State) -> Result<(), IssueError> {
         let old_state = self.state.clone();
         let mut state_filename = std::path::PathBuf::from(&self.dir);
         state_filename.push("state");
         let mut state_file = std::fs::File::create(&state_filename)?;
         write!(state_file, "{}", new_state)?;
-        crate::git::add(&state_filename)?;
-        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
-            crate::git::commit(
-                &self.dir,
-                &format!(
-                    "change state of issue {}, {} -> {}",
-                    self.dir.file_name().unwrap().to_string_lossy(),
-                    old_state,
-                    new_state,
-                ),
-            )?;
+        self.commit(&format!(
+            "change state of issue {}, {} -> {}",
+            self.dir.file_name().unwrap().to_string_lossy(),
+            old_state,
+            new_state,
+        ))?;
+        if new_state == State::Done {
+            self.set_done_time(chrono::Local::now())?;
         }
         Ok(())
     }
@@ -306,6 +308,24 @@ impl Issue {
         state_filename.push("state");
         let state_string = std::fs::read_to_string(state_filename)?;
         self.state = State::from_str(state_string.trim())?;
+        Ok(())
+    }
+
+    /// Set the `done_time` of the Issue.  Commits.
+    pub fn set_done_time(
+        &mut self,
+        done_time: chrono::DateTime<chrono::Local>,
+    ) -> Result<(), IssueError> {
+        let mut done_time_filename = std::path::PathBuf::from(&self.dir);
+        done_time_filename.push("done_time");
+        let mut done_time_file = std::fs::File::create(&done_time_filename)?;
+        write!(done_time_file, "{}", done_time.to_rfc3339())?;
+        self.done_time = Some(done_time.clone());
+        self.commit(&format!(
+            "set done-time of issue {} to {}",
+            self.dir.file_name().unwrap().to_string_lossy(),
+            done_time,
+        ))?;
         Ok(())
     }
 
@@ -319,18 +339,12 @@ impl Issue {
         assignee_filename.push("assignee");
         let mut assignee_file = std::fs::File::create(&assignee_filename)?;
         write!(assignee_file, "{}", new_assignee)?;
-        crate::git::add(&assignee_filename)?;
-        if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
-            crate::git::commit(
-                &self.dir,
-                &format!(
-                    "change assignee of issue {}, {} -> {}",
-                    self.dir.file_name().unwrap().to_string_lossy(),
-                    old_assignee,
-                    new_assignee,
-                ),
-            )?;
-        }
+        self.commit(&format!(
+            "change assignee of issue {}, {} -> {}",
+            self.dir.file_name().unwrap().to_string_lossy(),
+            old_assignee,
+            new_assignee,
+        ))?;
         Ok(())
     }
 
@@ -444,7 +458,15 @@ impl Issue {
         for tag in &self.tags {
             writeln!(tags_file, "{}", tag)?;
         }
-        crate::git::add(&tags_filename)?;
+        self.commit(commit_message)?;
+        Ok(())
+    }
+
+    fn commit(&self, commit_message: &str) -> Result<(), IssueError> {
+        crate::git::add(&self.dir)?;
+        if !crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
+            return Ok(());
+        }
         crate::git::commit(&self.dir, commit_message)?;
         Ok(())
     }
@@ -461,9 +483,10 @@ mod tests {
         let expected = Issue {
             id: String::from("3943fc5c173fdf41c0a22251593cd476d96e6c9f"),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
+            done_time: None,
             tags: Vec::<String>::from([
                 String::from("tag1"),
                 String::from("TAG2"),
@@ -488,9 +511,10 @@ mod tests {
         let expected = Issue {
             id: String::from("7792b063eef6d33e7da5dc1856750c149ba678c6"),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            timestamp: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
+            done_time: None,
             tags: Vec::<String>::new(),
             state: State::InProgress,
             dependencies: None,

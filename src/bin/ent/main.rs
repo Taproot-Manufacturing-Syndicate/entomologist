@@ -24,22 +24,31 @@ struct Args {
 enum Commands {
     /// List issues.
     List {
-        /// Filter string, describes issues to include in the list.
-        /// The filter string is composed of chunks separated by ":".
-        /// Each chunk is of the form "name=condition".  The supported
-        /// names and their matching conditions are:
+        /// Filter strings, describes issues to include in the list.
+        /// Each filter string is of the form "name=condition".
+        /// The supported names and their matching conditions are:
         ///
         /// "state": Comma-separated list of states to list.
+        /// Example: "state=new,backlog".  Defaults to
+        /// "new,backlog,blocked,inprogress".
         ///
-        /// "assignee": Comma-separated list of assignees to list.
-        /// Defaults to all assignees if not set.
+        /// "assignee": Comma-separated list of assignees to include in
+        /// the list.  The empty string includes issues with no assignee.
+        /// Example: "assignee=seb," lists issues assigned to "seb" and
+        /// issues without an assignee.  Defaults to include all issues.
         ///
-        /// "tag": Comma-separated list of tags to include or exclude
-        /// (if prefixed with "-").  If omitted, defaults to including
-        /// all tags and excluding none.
+        /// "tag": Comma-separated list of tags to include, or exclude
+        /// if prefixed with "-".  Example: "tag=bug,-docs" shows issues
+        /// that are tagged "bug" and not tagged "docs".  Defaults to
+        /// including all tags and excluding none.
         ///
-        #[arg(default_value_t = String::from("state=New,Backlog,Blocked,InProgress"))]
-        filter: String,
+        /// "done-time": Time range of issue completion, in the form
+        /// "[START]..[END]".  Includes issues that were marked Done
+        /// between START and END.  START and END are both in RFC 3339
+        /// format, e.g. "YYYY-MM-DDTHH:MM:SS[+-]HH:MM".  If START
+        /// is omitted, defaults to the beginning of time.  If END is
+        /// omitted, defaults to the end of time.
+        filter: Vec<String>,
     },
 
     /// Create a new issue.
@@ -84,6 +93,12 @@ enum Commands {
         #[arg(allow_hyphen_values = true)]
         tag: Option<String>,
     },
+
+    /// Get or set the `done_time` of the Issue.
+    DoneTime {
+        issue_id: String,
+        done_time: Option<String>,
+    },
 }
 
 fn handle_command(
@@ -93,7 +108,14 @@ fn handle_command(
     match &args.command {
         Commands::List { filter } => {
             let issues = entomologist::database::read_issues_database(issues_database_source)?;
-            let filter = entomologist::Filter::new_from_str(filter)?;
+            let filter = {
+                let mut f = entomologist::Filter::new();
+                for filter_str in filter {
+                    f.parse(filter_str)?;
+                }
+                f
+            };
+
             let mut uuids_by_state = std::collections::HashMap::<
                 entomologist::issue::State,
                 Vec<&entomologist::issue::IssueHandle>,
@@ -123,6 +145,19 @@ fn handle_command(
                     }
                 }
 
+                if let Some(issue_done_time) = issue.done_time {
+                    if let Some(start_done_time) = filter.start_done_time {
+                        if start_done_time > issue_done_time {
+                            continue;
+                        }
+                    }
+                    if let Some(end_done_time) = filter.end_done_time {
+                        if end_done_time < issue_done_time {
+                            continue;
+                        }
+                    }
+                }
+
                 // This issue passed all the filters, include it in list.
                 uuids_by_state
                     .entry(issue.state.clone())
@@ -146,7 +181,7 @@ fn handle_command(
                 these_uuids.sort_by(|a_id, b_id| {
                     let a = issues.issues.get(*a_id).unwrap();
                     let b = issues.issues.get(*b_id).unwrap();
-                    a.timestamp.cmp(&b.timestamp)
+                    a.creation_time.cmp(&b.creation_time)
                 });
                 println!("{:?}:", state);
                 for uuid in these_uuids {
@@ -191,8 +226,10 @@ fn handle_command(
         }
 
         Commands::New { description } => {
-            let issues_database =
-                entomologist::database::make_issues_database(issues_database_source, entomologist::database::IssuesDatabaseAccess::ReadWrite)?;
+            let issues_database = entomologist::database::make_issues_database(
+                issues_database_source,
+                entomologist::database::IssuesDatabaseAccess::ReadWrite,
+            )?;
             match entomologist::issue::Issue::new(&issues_database.dir, description) {
                 Err(entomologist::issue::IssueError::EmptyDescription) => {
                     println!("no new issue created");
@@ -210,8 +247,10 @@ fn handle_command(
         }
 
         Commands::Edit { uuid } => {
-            let issues_database =
-                entomologist::database::make_issues_database(issues_database_source, entomologist::database::IssuesDatabaseAccess::ReadWrite)?;
+            let issues_database = entomologist::database::make_issues_database(
+                issues_database_source,
+                entomologist::database::IssuesDatabaseAccess::ReadWrite,
+            )?;
             let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
             if let Some(issue) = issues.get_mut_issue(uuid) {
                 match issue.edit_description() {
@@ -250,7 +289,10 @@ fn handle_command(
                 Some(issue) => {
                     println!("issue {}", issue_id);
                     println!("author: {}", issue.author);
-                    println!("timestamp: {}", issue.timestamp);
+                    println!("creation_time: {}", issue.creation_time);
+                    if let Some(done_time) = &issue.done_time {
+                        println!("done_time: {}", done_time);
+                    }
                     println!("state: {:?}", issue.state);
                     if let Some(dependencies) = &issue.dependencies {
                         println!("dependencies: {:?}", dependencies);
@@ -264,7 +306,7 @@ fn handle_command(
                         println!("");
                         println!("comment: {}", comment.uuid);
                         println!("author: {}", comment.author);
-                        println!("timestamp: {}", comment.timestamp);
+                        println!("creation_time: {}", comment.creation_time);
                         println!("");
                         println!("{}", comment.description);
                     }
@@ -280,8 +322,10 @@ fn handle_command(
             new_state,
         } => match new_state {
             Some(new_state) => {
-                let issues_database =
-                    entomologist::database::make_issues_database(issues_database_source, entomologist::database::IssuesDatabaseAccess::ReadWrite)?;
+                let issues_database = entomologist::database::make_issues_database(
+                    issues_database_source,
+                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
+                )?;
                 let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
                 match issues.issues.get_mut(issue_id) {
                     Some(issue) => {
@@ -313,8 +357,10 @@ fn handle_command(
             issue_id,
             description,
         } => {
-            let issues_database =
-                entomologist::database::make_issues_database(issues_database_source, entomologist::database::IssuesDatabaseAccess::ReadWrite)?;
+            let issues_database = entomologist::database::make_issues_database(
+                issues_database_source,
+                entomologist::database::IssuesDatabaseAccess::ReadWrite,
+            )?;
             let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
             let Some(issue) = issues.get_mut_issue(issue_id) else {
                 return Err(anyhow::anyhow!("issue {} not found", issue_id));
@@ -339,9 +385,13 @@ fn handle_command(
         }
 
         Commands::Sync { remote } => {
-            if let entomologist::database::IssuesDatabaseSource::Branch(branch) = issues_database_source {
-                let issues_database =
-                    entomologist::database::make_issues_database(issues_database_source, entomologist::database::IssuesDatabaseAccess::ReadWrite)?;
+            if let entomologist::database::IssuesDatabaseSource::Branch(branch) =
+                issues_database_source
+            {
+                let issues_database = entomologist::database::make_issues_database(
+                    issues_database_source,
+                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
+                )?;
                 entomologist::git::sync(&issues_database.dir, remote, branch)?;
                 println!("synced {:?} with {:?}", branch, remote);
             } else {
@@ -428,6 +478,38 @@ fn handle_command(
                 }
             }
         }
+
+        Commands::DoneTime {
+            issue_id,
+            done_time,
+        } => {
+            let issues = entomologist::database::read_issues_database(issues_database_source)?;
+            let Some(issue) = issues.issues.get(issue_id) else {
+                return Err(anyhow::anyhow!("issue {} not found", issue_id));
+            };
+            match done_time {
+                Some(done_time) => {
+                    // Add or remove tag.
+                    let issues_database = entomologist::database::make_issues_database(
+                        issues_database_source,
+                        entomologist::database::IssuesDatabaseAccess::ReadWrite,
+                    )?;
+                    let mut issues =
+                        entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+                    let Some(issue) = issues.get_mut_issue(issue_id) else {
+                        return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                    };
+                    let done_time = chrono::DateTime::parse_from_rfc3339(done_time)
+                        .unwrap()
+                        .with_timezone(&chrono::Local);
+                    issue.set_done_time(done_time)?;
+                }
+                None => match &issue.done_time {
+                    Some(done_time) => println!("done_time: {}", done_time),
+                    None => println!("None"),
+                },
+            };
+        }
     }
 
     Ok(())
@@ -441,7 +523,9 @@ fn main() -> anyhow::Result<()> {
     // println!("{:?}", args);
 
     let issues_database_source = match (&args.issues_dir, &args.issues_branch) {
-        (Some(dir), None) => entomologist::database::IssuesDatabaseSource::Dir(std::path::Path::new(dir)),
+        (Some(dir), None) => {
+            entomologist::database::IssuesDatabaseSource::Dir(std::path::Path::new(dir))
+        }
         (None, Some(branch)) => entomologist::database::IssuesDatabaseSource::Branch(branch),
         (None, None) => entomologist::database::IssuesDatabaseSource::Branch("entomologist-data"),
         (Some(_), Some(_)) => {
