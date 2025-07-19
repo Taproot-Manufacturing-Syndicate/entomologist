@@ -1,0 +1,5 @@
+decrease write window scope
+
+decrease the amount of time that the `ent` binary has a mutable reference to the database object by only checking out a worktree on a commit operation. 
+
+alternatively (or maybe in addition to?) possibly use branching to allow for simultaneous edits in a safer way. 
