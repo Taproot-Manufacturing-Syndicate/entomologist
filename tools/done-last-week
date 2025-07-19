@@ -1,0 +1,11 @@
+#!/bin/bash
+
+START=$(date --iso-8601=seconds --date='last monday - 1 week')
+END=$(date --iso-8601=seconds --date='last monday')
+
+#echo START=${START}
+#echo END=${END}
+
+ent list \
+    state=done \
+    done-time="${START}..${END}"

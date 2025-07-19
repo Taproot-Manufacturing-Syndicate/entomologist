@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# This script finds all issues with state=Done which do not have a
+# `done_time`.
+#
+# It sets each issue's `done_time` to the most recent time that the
+# `state` was updated from the git log.
+#
+
+set -e
+
+for ISSUE_ID in $(ent list state=done done-time=9999-01-01T00:00:00-06:00.. | grep '  ' | cut -f 1 -d ' '); do
+    echo ${ISSUE_ID}
+    UTIME=$(PAGER='' git log -n1 --pretty=format:%at%n entomologist-data -- ${ISSUE_ID}/state)
+    echo ${UTIME}
+    DATETIME=$(date --rfc-3339=seconds --date="@${UTIME}")
+    echo ${DATETIME}
+    ent done-time ${ISSUE_ID} "${DATETIME}"
+done
