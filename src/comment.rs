@@ -48,19 +48,23 @@ impl Comment {
                 }
             }
         }
-        if description == None {
+        let Some(description) = description else {
             return Err(CommentError::CommentParseError);
-        }
+        };
 
         let author = crate::git::git_log_oldest_author(comment_dir)?;
         let creation_time = crate::git::git_log_oldest_timestamp(comment_dir)?;
         let dir = std::path::PathBuf::from(comment_dir);
 
         Ok(Self {
-            uuid: String::from(dir.file_name().unwrap().to_string_lossy()),
+            uuid: String::from(
+                dir.file_name()
+                    .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                    .to_string_lossy(),
+            ),
             author,
             creation_time,
-            description: description.unwrap(),
+            description,
             dir: std::path::PathBuf::from(comment_dir),
         })
     }
@@ -109,7 +113,11 @@ impl Comment {
                 &format!(
                     "add comment {} on issue {}",
                     comment.uuid,
-                    issue.dir.file_name().unwrap().to_string_lossy(),
+                    issue
+                        .dir
+                        .file_name()
+                        .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                        .to_string_lossy(),
                 ),
             )?;
         }
@@ -130,10 +138,15 @@ impl Comment {
         crate::git::add(&description_filename)?;
         if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
             crate::git::commit(
-                &description_filename.parent().unwrap(),
+                &description_filename
+                    .parent()
+                    .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?,
                 &format!(
                     "edit comment {} on issue FIXME", // FIXME: name the issue that the comment is on
-                    self.dir.file_name().unwrap().to_string_lossy()
+                    self.dir
+                        .file_name()
+                        .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                        .to_string_lossy()
                 ),
             )?;
             self.read_description()?;
@@ -165,8 +178,8 @@ impl Comment {
             .spawn()?
             .wait_with_output()?;
         if !result.status.success() {
-            println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-            println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+            println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+            println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
             return Err(CommentError::EditorError);
         }
 
