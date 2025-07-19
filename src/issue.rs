@@ -153,9 +153,9 @@ impl Issue {
             }
         }
 
-        if description == None {
+        let Some(description) = description else {
             return Err(IssueError::IssueParseError);
-        }
+        };
 
         // parse the issue ID from the directory name
         let id = if let Some(parsed_id) = match dir.file_name() {
@@ -179,7 +179,7 @@ impl Issue {
             state: state,
             dependencies,
             assignee,
-            description: description.unwrap(),
+            description,
             comments,
             dir: std::path::PathBuf::from(dir),
         })
@@ -267,9 +267,9 @@ impl Issue {
             "edit description of issue {}",
             description_filename
                 .parent()
-                .unwrap()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
                 .file_name()
-                .unwrap()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
                 .to_string_lossy(),
         ))?;
         Ok(())
@@ -293,7 +293,10 @@ impl Issue {
         write!(state_file, "{}", new_state)?;
         self.commit(&format!(
             "change state of issue {}, {} -> {}",
-            self.dir.file_name().unwrap().to_string_lossy(),
+            self.dir
+                .file_name()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                .to_string_lossy(),
             old_state,
             new_state,
         ))?;
@@ -323,7 +326,10 @@ impl Issue {
         self.done_time = Some(done_time.clone());
         self.commit(&format!(
             "set done-time of issue {} to {}",
-            self.dir.file_name().unwrap().to_string_lossy(),
+            self.dir
+                .file_name()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                .to_string_lossy(),
             done_time,
         ))?;
         Ok(())
@@ -341,7 +347,10 @@ impl Issue {
         write!(assignee_file, "{}", new_assignee)?;
         self.commit(&format!(
             "change assignee of issue {}, {} -> {}",
-            self.dir.file_name().unwrap().to_string_lossy(),
+            self.dir
+                .file_name()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                .to_string_lossy(),
             old_assignee,
             new_assignee,
         ))?;
@@ -358,7 +367,10 @@ impl Issue {
         self.tags.sort();
         self.commit_tags(&format!(
             "issue {} add tag {}",
-            self.dir.file_name().unwrap().to_string_lossy(),
+            self.dir
+                .file_name()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                .to_string_lossy(),
             tag
         ))?;
         Ok(())
@@ -373,7 +385,10 @@ impl Issue {
         self.tags.remove(index);
         self.commit_tags(&format!(
             "issue {} remove tag {}",
-            self.dir.file_name().unwrap().to_string_lossy(),
+            self.dir
+                .file_name()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                .to_string_lossy(),
             tag
         ))?;
         Ok(())
@@ -432,8 +447,8 @@ impl Issue {
             .spawn()?
             .wait_with_output()?;
         if !result.status.success() {
-            println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-            println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+            println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+            println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
             return Err(IssueError::EditorError);
         }
         if !description_filename.exists() || description_filename.metadata()?.len() == 0 {
