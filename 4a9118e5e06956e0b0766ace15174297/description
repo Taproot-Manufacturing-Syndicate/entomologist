@@ -1,0 +1,8 @@
+add dependency count to `ent list`
+
+
+candidate emojis:
+↖ - represents the "dependency tree" DAG edge that points to this issue
+⌛- shows that the issue is waiting on something else
+🔗- shows that the issue is linked to something else
+
