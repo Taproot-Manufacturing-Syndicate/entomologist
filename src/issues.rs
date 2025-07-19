@@ -54,6 +54,8 @@ impl Issues {
         let mut issues = Self::new();
 
         for direntry in dir.read_dir()? {
+            #[cfg(feature = "log")]
+            debug!("looking at direntry {:?}", direntry);
             if let Ok(direntry) = direntry {
                 if direntry.metadata()?.is_dir() {
                     match crate::issue::Issue::new_from_dir(direntry.path().as_path()) {

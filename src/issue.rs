@@ -130,7 +130,7 @@ impl Issue {
                     )?;
                     done_time = Some(raw_done_time.into());
                 } else if file_name == "dependencies" {
-                    let dep_strings = std::fs::read_to_string(direntry.path())?;
+                    let dep_strings = std::fs::read_to_string(direntry.path()).unwrap();
                     let deps: Vec<IssueHandle> = dep_strings
                         .lines()
                         .map(|dep| IssueHandle::from(dep))

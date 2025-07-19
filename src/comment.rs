@@ -41,7 +41,7 @@ impl Comment {
                     description = Some(std::fs::read_to_string(direntry.path())?);
                 } else {
                     #[cfg(feature = "log")]
-                    debug!(
+                    log::debug!(
                         "ignoring unknown file in comment directory: {:?}",
                         file_name
                     );

@@ -284,7 +284,9 @@ fn handle_command(
         }
 
         Commands::Show { issue_id } => {
+            println!("reading database");
             let issues = entomologist::database::read_issues_database(issues_database_source)?;
+            println!("looking for issue {}", issue_id);
             match issues.get_issue(issue_id) {
                 Some(issue) => {
                     println!("issue {}", issue_id);
