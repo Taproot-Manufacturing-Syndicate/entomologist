@@ -6,3 +6,8 @@ for ISSUE_ID in $(ent list --ids-only ${MY_FILTER}); do
     # do thing with ${ISSUE_ID}
 done
 ```
+
+For now you can sort of emulate this with:
+```
+ent list state=done done-time=2026-01-01T00:00:00-06:00.. | grep '  ' | cut -f 1 -d ' '
+```
