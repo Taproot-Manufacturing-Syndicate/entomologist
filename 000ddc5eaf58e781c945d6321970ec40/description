@@ -1,4 +1,4 @@
-add an option to `ent list` to just show filtered issue ids
+add an option to `ent list` to show only filtered issue ids
 
 This would be useful in scripts, like:
 ```
