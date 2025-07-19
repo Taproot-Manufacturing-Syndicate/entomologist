@@ -1,12 +1,14 @@
 The done-time thing is implemented and merged, but many issues in our
 database were marked Done before this change, so they have no `done_time`.
 
-I think i want to fix this by setting a done-time for each of them using
-something like:
+I fixed this by setting a done-time for each of them using this script:
 ```
+#!/bin/bash
+set -e
+
 for ISSUE_ID in $(ent list state=done done-time=9999-01-01T00:00:00-06:00.. | grep '  ' | cut -f 1 -d ' '); do
-    # use `git log` on the issue's state file to find when it got marked Done
-    ent done-time ${ISSUE_ID} ${TIME}
+    UTIME=$(PAGER='' git log -n1 --pretty=format:%at%n entomologist-data -- ${ISSUE_ID}/state)
+    DATETIME=$(date --rfc-3339=seconds --date="@${UTIME}")
+    ent done-time ${ISSUE_ID} "${DATETIME}"
 done
 ```
-
