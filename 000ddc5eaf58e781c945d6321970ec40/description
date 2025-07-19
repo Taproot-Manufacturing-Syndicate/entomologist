@@ -1,0 +1,8 @@
+add an option to `ent list` to just show filtered issue ids
+
+This would be useful in scripts, like:
+```
+for ISSUE_ID in $(ent list --ids-only ${MY_FILTER}); do
+    # do thing with ${ISSUE_ID}
+done
+```
