@@ -1,0 +1,12 @@
+changes to the ent filesystem break older versions of ent
+
+
+recently with the dependency API, i updated the ent DB with an entry which contains a dependency, and has an updated method of storing them (files inside of a directory instead of a file with a list of dependencies) 
+
+this has caused a problem with mainline `ent` showing the following error: 
+
+because mainline `ent` expects there to be a file with a list of dependencies, and when it goes to open the file, it errors, since it's actually a directory with the same name as what it expects the file to be named. 
+
+we should probably make it so if `ent` doesn't understand something, it does not completely exit... at least in some cases? 
+
+or enforce some kind of versioning on the DB or something... not entirely sure. 
