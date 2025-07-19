@@ -58,11 +58,11 @@ impl Issues {
                 if direntry.metadata()?.is_dir() {
                     match crate::issue::Issue::new_from_dir(direntry.path().as_path()) {
                         Err(e) => {
-                            println!(
+                            eprintln!(
                                 "failed to parse issue {}, skipping",
                                 direntry.file_name().to_string_lossy()
                             );
-                            println!("ignoring error: {:?}", e);
+                            eprintln!("ignoring error: {:?}", e);
                             continue;
                         }
                         Ok(issue) => {
