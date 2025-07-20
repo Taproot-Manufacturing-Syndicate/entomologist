@@ -1,0 +1,33 @@
+There are `entomologist-data` branches "in the wild" that have issues
+with tags files, so we need to migrate those somehow.
+
+We discussed a couple of ways to do this:
+
+1. Have the ent library do it automatically and transparently when it
+   comes across an old-style tags file.  In `Issue::new_from_dir()` we'd
+   detect the old format, parse it, then immediately delete the file,
+   write the new format directory, and commit the result.
+
+   This is good:
+    - It's easy for the human
+
+   This is bad:
+    - entomologist will need to carry along this crufty code until we
+      think there are no more old-style repos in existence
+
+
+2. Make a stand-alone tool (like the `set-done-time` tool in
+   <https://git.glyphs.tech/taproot-manufacturing/entomologist/pulls/27>.
+   The ent binary does *not* know how to read the old tags file, and will
+   error out if it comes across an issue with such a file.  The human
+   would then manually run the tags-representation updater tool.
+   This tool would make the git worktree, walk the issues, find the
+   old-style tags, rewrite them in the new format, and commit the result.
+
+   This is good:
+    - Keeps the core entomologist code clean and "modern".
+
+   This is bad:
+    - This tool does manual/direct manipulation of the on-disk format,
+      which means it duplicates a lot of what the entomologist library
+      does.
