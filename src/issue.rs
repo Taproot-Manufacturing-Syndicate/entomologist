@@ -62,6 +62,12 @@ pub enum IssueError {
     StdioIsNotTerminal,
     #[error("Failed to parse issue ID")]
     IdError,
+    #[error("Dependency not found")]
+    DepNotFound,
+    #[error("Dependency already exists")]
+    DepExists,
+    #[error("Self-dependency not allowed")]
+    DepSelf,
 }
 
 impl FromStr for State {
@@ -128,15 +134,8 @@ impl Issue {
                         std::fs::read_to_string(direntry.path())?.trim(),
                     )?;
                     done_time = Some(raw_done_time.into());
-                } else if file_name == "dependencies" {
-                    let dep_strings = std::fs::read_to_string(direntry.path())?;
-                    let deps: Vec<IssueHandle> = dep_strings
-                        .lines()
-                        .map(|dep| IssueHandle::from(dep))
-                        .collect();
-                    if deps.len() > 0 {
-                        dependencies = Some(deps);
-                    }
+                } else if file_name == "dependencies" && direntry.metadata()?.is_dir() {
+                    dependencies = Self::read_dependencies(&direntry.path())?;
                 } else if file_name == "tags" {
                     let contents = std::fs::read_to_string(direntry.path())?;
                     tags = contents
@@ -197,6 +196,23 @@ impl Issue {
         }
         comments.sort_by(|a, b| a.creation_time.cmp(&b.creation_time));
         Ok(())
+    }
+
+    fn read_dependencies(dir: &std::path::Path) -> Result<Option<Vec<IssueHandle>>, IssueError> {
+        let mut dependencies: Option<Vec<String>> = None;
+        for direntry in dir.read_dir()? {
+            if let Ok(direntry) = direntry {
+                match &mut dependencies {
+                    Some(deps) => {
+                        deps.push(direntry.file_name().into_string().unwrap());
+                    }
+                    None => {
+                        dependencies = Some(vec![direntry.file_name().into_string().unwrap()]);
+                    }
+                }
+            }
+        }
+        Ok(dependencies)
     }
 
     /// Add a new Comment to the Issue.  Commits.
@@ -406,6 +422,46 @@ impl Issue {
             }
         }
         return false;
+    }
+
+    pub fn add_dependency(&mut self, dep: IssueHandle) -> Result<(), IssueError> {
+        if self.id == dep {
+            Err(IssueError::DepSelf)?;
+        }
+        match &mut self.dependencies {
+            Some(v) => v.push(dep.clone()),
+            None => self.dependencies = Some(vec![dep.clone()]),
+        }
+        let mut dir = std::path::PathBuf::from(&self.dir);
+        dir.push("dependencies");
+        if !dir.exists() {
+            std::fs::create_dir(&dir)?;
+        }
+
+        dir.push(dep.clone());
+
+        if !dir.exists() {
+            std::fs::File::create(&dir)?;
+            self.commit(&format!("add dep {} to issue {}", dep, self.id))?;
+        } else {
+            Err(IssueError::DepExists)?;
+        }
+        Ok(())
+    }
+
+    pub fn remove_dependency(&mut self, dep: IssueHandle) -> Result<(), IssueError> {
+        match &mut self.dependencies {
+            Some(v) => {
+                if let Some(i) = v.iter().position(|d| d == &dep) {
+                    v.remove(i);
+                } else {
+                    Err(IssueError::DepNotFound)?;
+                }
+            }
+            None => Err(IssueError::DepNotFound)?,
+        }
+        self.commit(&format!("remove dep {} from issue {}", dep, self.id))?;
+        Ok(())
     }
 }
 
