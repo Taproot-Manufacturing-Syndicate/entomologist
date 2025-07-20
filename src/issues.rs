@@ -56,8 +56,19 @@ impl Issues {
         for direntry in dir.read_dir()? {
             if let Ok(direntry) = direntry {
                 if direntry.metadata()?.is_dir() {
-                    let issue = crate::issue::Issue::new_from_dir(direntry.path().as_path())?;
-                    issues.add_issue(issue);
+                    match crate::issue::Issue::new_from_dir(direntry.path().as_path()) {
+                        Err(e) => {
+                            eprintln!(
+                                "failed to parse issue {}, skipping",
+                                direntry.file_name().to_string_lossy()
+                            );
+                            eprintln!("ignoring error: {:?}", e);
+                            continue;
+                        }
+                        Ok(issue) => {
+                            issues.add_issue(issue);
+                        }
+                    }
                 } else if direntry.file_name() == "config.toml" {
                     issues.parse_config(direntry.path().as_path())?;
                 } else {

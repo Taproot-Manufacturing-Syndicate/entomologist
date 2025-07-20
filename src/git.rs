@@ -48,8 +48,8 @@ impl Worktree {
             .args(["worktree", "add", &path.path().to_string_lossy(), branch])
             .output()?;
         if !result.status.success() {
-            println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-            println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+            println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+            println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
             return Err(GitError::Oops);
         }
         Ok(Self { path })
@@ -67,8 +67,8 @@ impl Worktree {
             ])
             .output()?;
         if !result.status.success() {
-            println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-            println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+            println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+            println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
             return Err(GitError::Oops);
         }
         Ok(Self { path })
@@ -87,8 +87,8 @@ pub fn checkout_branch_in_worktree(
         .args(["worktree", "add", &worktree_dir.to_string_lossy(), branch])
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
     Ok(())
@@ -99,8 +99,8 @@ pub fn git_worktree_prune() -> Result<(), GitError> {
         .args(["worktree", "prune"])
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
     Ok(())
@@ -111,8 +111,8 @@ pub fn git_remove_branch(branch: &str) -> Result<(), GitError> {
         .args(["branch", "-D", branch])
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
     Ok(())
@@ -139,11 +139,14 @@ pub fn worktree_is_dirty(dir: &str) -> Result<bool, GitError> {
 pub fn add(file: &std::path::Path) -> Result<(), GitError> {
     let result = std::process::Command::new("git")
         .args(["add", &file.to_string_lossy()])
-        .current_dir(file.parent().unwrap())
+        .current_dir(
+            file.parent()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?,
+        )
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
     return Ok(());
@@ -152,11 +155,14 @@ pub fn add(file: &std::path::Path) -> Result<(), GitError> {
 pub fn restore_file(file: &std::path::Path) -> Result<(), GitError> {
     let result = std::process::Command::new("git")
         .args(["restore", &file.to_string_lossy()])
-        .current_dir(file.parent().unwrap())
+        .current_dir(
+            file.parent()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?,
+        )
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
     return Ok(());
@@ -168,8 +174,8 @@ pub fn commit(dir: &std::path::Path, msg: &str) -> Result<(), GitError> {
         .current_dir(dir)
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
     Ok(())
@@ -180,12 +186,18 @@ pub fn git_commit_file(file: &std::path::Path) -> Result<(), GitError> {
     git_dir.pop();
 
     let result = std::process::Command::new("git")
-        .args(["add", &file.file_name().unwrap().to_string_lossy()])
+        .args([
+            "add",
+            &file
+                .file_name()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                .to_string_lossy(),
+        ])
         .current_dir(&git_dir)
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
 
@@ -195,15 +207,20 @@ pub fn git_commit_file(file: &std::path::Path) -> Result<(), GitError> {
             "-m",
             &format!(
                 "update '{}' in issue {}",
-                file.file_name().unwrap().to_string_lossy(),
-                git_dir.file_name().unwrap().to_string_lossy()
+                file.file_name()
+                    .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                    .to_string_lossy(),
+                git_dir
+                    .file_name()
+                    .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                    .to_string_lossy()
             ),
         ])
         .current_dir(&git_dir)
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
 
@@ -216,8 +233,8 @@ pub fn git_fetch(dir: &std::path::Path, remote: &str) -> Result<(), GitError> {
         .current_dir(dir)
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
     Ok(())
@@ -253,13 +270,13 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
             "Sync failed!  'git log' error!  Help, a human needs to fix the mess in {:?}",
             branch
         );
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
     if result.stdout.len() > 0 {
         println!("Changes fetched from remote {}:", remote);
-        println!("{}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("{}", &String::from_utf8_lossy(&result.stdout));
         println!("");
     }
 
@@ -279,13 +296,13 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
             "Sync failed!  'git log' error!  Help, a human needs to fix the mess in {:?}",
             branch
         );
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
     if result.stdout.len() > 0 {
         println!("Changes to push to remote {}:", remote);
-        println!("{}", std::str::from_utf8(&result.stdout).unwrap());
+        println!("{}", &String::from_utf8_lossy(&result.stdout));
         println!("");
     }
 
@@ -299,8 +316,8 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
             "Sync failed!  Merge error!  Help, a human needs to fix the mess in {:?}",
             branch
         );
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
 
@@ -314,8 +331,8 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
             "Sync failed!  Push error!  Help, a human needs to fix the mess in {:?}",
             branch
         );
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
 
@@ -332,13 +349,16 @@ pub fn git_log_oldest_timestamp(
             "log",
             "--pretty=format:%at",
             "--",
-            &path.file_name().unwrap().to_string_lossy(),
+            &path
+                .file_name()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                .to_string_lossy(),
         ])
         .current_dir(&git_dir)
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
     let timestamp_str = std::str::from_utf8(&result.stdout).unwrap();
@@ -358,13 +378,16 @@ pub fn git_log_oldest_author(path: &std::path::Path) -> Result<String, GitError>
             "log",
             "--pretty=format:%an <%ae>",
             "--",
-            &path.file_name().unwrap().to_string_lossy(),
+            &path
+                .file_name()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                .to_string_lossy(),
         ])
         .current_dir(&git_dir)
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
     let author_str = std::str::from_utf8(&result.stdout).unwrap();
@@ -383,8 +406,8 @@ pub fn create_orphan_branch(branch: &str) -> Result<(), GitError> {
         .args(["worktree", "prune"])
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
 
@@ -400,8 +423,8 @@ fn create_orphan_branch_at_path(
         .args(["worktree", "add", "--orphan", "-b", branch, &worktree_dir])
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
 
@@ -418,8 +441,8 @@ fn create_orphan_branch_at_path(
         .current_dir(worktree_path)
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
 
@@ -428,8 +451,8 @@ fn create_orphan_branch_at_path(
         .current_dir(worktree_path)
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", std::str::from_utf8(&result.stdout).unwrap());
-        println!("stderr: {}", std::str::from_utf8(&result.stderr).unwrap());
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
 
