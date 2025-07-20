@@ -290,6 +290,15 @@ fn handle_command(
             };
             println!("issue {}", issue_id);
             println!("author: {}", issue.author);
+            if issue.tags.len() > 0 {
+                print!("tags: ");
+                let mut separator = "";
+                for tag in &issue.tags {
+                    print!("{}{}", separator, tag);
+                    separator = ", ";
+                }
+                println!("");
+            }
             println!("creation_time: {}", issue.creation_time);
             if let Some(done_time) = &issue.done_time {
                 println!("done_time: {}", done_time);
