@@ -1,0 +1,76 @@
+#!/bin/bash
+#
+# Check out the specified branch (or `entomologist-data` if not specified)
+# in a temporary worktree.
+#
+# For each issue with a `tags` file:
+#
+#     replace the old-style tags file with a new-style tags dir
+#
+#     git commit
+
+set -e
+#set -x
+
+BRANCH=""
+
+if [[ -n "$1" ]] && [[ -d "$1" ]]; then
+    echo "updating ent db in directory '$1'"
+    pushd "$1"
+else
+    if [[ -n "$1" ]]; then
+        # better be a branch
+        BRANCH="$1"
+    else
+        BRANCH="entomologist-data"
+    fi
+    echo "updating ent db in branch '${BRANCH}'"
+    WORKTREE_DIR=$(mktemp --directory)
+    git worktree add "${WORKTREE_DIR}" "${BRANCH}"
+    pushd "${WORKTREE_DIR}" > /dev/null
+fi
+
+# Now our current working directory is the ent db that we're supposed
+# to update.
+#
+# If $BRANCH is empty, we're in a directory not tracked by git and we
+# just change the files.
+#
+# If $BRANCH is not empty, we're in a git worktree of the branch we're
+# supposed to change, so we commit as we go.
+
+for ISSUE_ID in $(find . -maxdepth 1 -type d -regextype posix-extended -regex '\./[0-9a-f]{32}'); do
+    ISSUE_ID=$(basename "${ISSUE_ID}")
+    if ! [[ -f "${ISSUE_ID}/tags" ]]; then
+        continue
+    fi
+
+    pushd "${ISSUE_ID}" > /dev/null
+
+    echo "${ISSUE_ID} has tags:"
+    TAGS=$(cat tags)
+    echo "${TAGS}"
+    rm tags
+
+    if [[ -n "${BRANCH}" ]]; then
+        git rm -f tags
+    fi
+
+    mkdir tags
+    for TAG in ${TAGS}; do
+        touch "tags/${TAG}"
+    done
+
+    if [[ -n "${BRANCH}" ]]; then
+        git add tags
+        git commit -m "issue ${ISSUE_ID}: update tags to new format"
+    fi
+
+    popd > /dev/null
+done
+
+popd > /dev/null
+
+if [[ -n "${BRANCH}" ]]; then
+    git worktree remove "${WORKTREE_DIR}"
+fi
