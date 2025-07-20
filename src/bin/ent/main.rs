@@ -291,35 +291,40 @@ fn handle_command(
 
         Commands::Show { issue_id } => {
             let issues = entomologist::database::read_issues_database(issues_database_source)?;
-            match issues.get_issue(issue_id) {
-                Some(issue) => {
-                    println!("issue {}", issue_id);
-                    println!("author: {}", issue.author);
-                    println!("creation_time: {}", issue.creation_time);
-                    if let Some(done_time) = &issue.done_time {
-                        println!("done_time: {}", done_time);
-                    }
-                    println!("state: {:?}", issue.state);
-                    if let Some(dependencies) = &issue.dependencies {
-                        println!("dependencies: {:?}", dependencies);
-                    }
-                    if let Some(assignee) = &issue.assignee {
-                        println!("assignee: {}", assignee);
-                    }
-                    println!("");
-                    println!("{}", issue.description);
-                    for comment in &issue.comments {
-                        println!("");
-                        println!("comment: {}", comment.uuid);
-                        println!("author: {}", comment.author);
-                        println!("creation_time: {}", comment.creation_time);
-                        println!("");
-                        println!("{}", comment.description);
-                    }
+            let Some(issue) = issues.get_issue(issue_id) else {
+                return Err(anyhow::anyhow!("issue {} not found", issue_id));
+            };
+            println!("issue {}", issue_id);
+            println!("author: {}", issue.author);
+            if issue.tags.len() > 0 {
+                print!("tags: ");
+                let mut separator = "";
+                for tag in &issue.tags {
+                    print!("{}{}", separator, tag);
+                    separator = ", ";
                 }
-                None => {
-                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
-                }
+                println!("");
+            }
+            println!("creation_time: {}", issue.creation_time);
+            if let Some(done_time) = &issue.done_time {
+                println!("done_time: {}", done_time);
+            }
+            println!("state: {:?}", issue.state);
+            if let Some(dependencies) = &issue.dependencies {
+                println!("dependencies: {:?}", dependencies);
+            }
+            if let Some(assignee) = &issue.assignee {
+                println!("assignee: {}", assignee);
+            }
+            println!("");
+            println!("{}", issue.description);
+            for comment in &issue.comments {
+                println!("");
+                println!("comment: {}", comment.uuid);
+                println!("author: {}", comment.author);
+                println!("creation_time: {}", comment.creation_time);
+                println!("");
+                println!("{}", comment.description);
             }
         }
 
