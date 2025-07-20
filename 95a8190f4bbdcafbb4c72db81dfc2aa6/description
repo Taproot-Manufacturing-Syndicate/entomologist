@@ -1,3 +1,5 @@
 lazy read of DB
 
 when running `list` don't load the entire object, instead only load the relevant metadata used to display in the list
+
+Similarly, when running e.g. `ent show ISSUE_ID`, don't load the other issues.
