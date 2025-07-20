@@ -1,0 +1,10 @@
+Of the three options you suggested i like "Hourglass Not Done" (⏳)
+best, because it most clearly shows that we're waiting for something.
+
+Or how about Stop Sign, 🛑?
+
+Do you want `ent list` to show the number of issues that this issue is
+blocked waiting on?  Something like:
+
+    012345       This issues stands alone
+    abc123  ⏳4  This other issue depends on four things
