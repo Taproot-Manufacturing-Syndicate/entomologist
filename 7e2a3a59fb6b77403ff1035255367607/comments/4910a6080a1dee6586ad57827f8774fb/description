@@ -1,0 +1,3 @@
+pushed new commit to the MR to fix the test that broke with the new dependencies layout. 
+
+IRL discussion landed on this being OK because the CLI was never released with the old dependencies layout, so unless someone has manually created a dependencies file, this should not have an impact. 
