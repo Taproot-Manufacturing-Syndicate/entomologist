@@ -1,0 +1,8 @@
+We can determine something like an "mtime" for an Issue by running a
+command like:
+
+`git log --pretty=format:%ai --max-count 1 entomologist-data -- ${ISSUE_ID}`
+
+Running it on `${ISSUE_ID}/comments` gives you the most recent time
+there was a commit in the comments directory, indicating a new or
+edited comment.
