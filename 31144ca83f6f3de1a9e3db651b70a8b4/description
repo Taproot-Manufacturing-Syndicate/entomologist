@@ -1,0 +1,1 @@
+`ent assign` and maybe other commands needlessly read the database twice
