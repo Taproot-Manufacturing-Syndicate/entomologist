@@ -137,13 +137,7 @@ impl Issue {
                 } else if file_name == "dependencies" && direntry.metadata()?.is_dir() {
                     dependencies = Self::read_dependencies(&direntry.path())?;
                 } else if file_name == "tags" {
-                    let contents = std::fs::read_to_string(direntry.path())?;
-                    tags = contents
-                        .lines()
-                        .filter(|s| s.len() > 0)
-                        .map(|tag| String::from(tag.trim()))
-                        .collect();
-                    tags.sort();
+                    tags = Self::read_tags(&direntry)?;
                 } else if file_name == "comments" && direntry.metadata()?.is_dir() {
                     Self::read_comments(&mut comments, &direntry.path())?;
                 } else {
@@ -523,6 +517,21 @@ impl Issue {
         }
         self.read_description()?;
         Ok(())
+    }
+
+    fn read_tags(tags_direntry: &std::fs::DirEntry) -> Result<Vec<String>, IssueError> {
+        if !tags_direntry.metadata()?.is_dir() {
+            eprintln!("issue has old-style tags file");
+            return Err(IssueError::IssueParseError);
+        }
+        let mut tags = Vec::<String>::new();
+        for direntry in tags_direntry.path().read_dir()? {
+            if let Ok(direntry) = direntry {
+                tags.push(String::from(direntry.file_name().to_string_lossy()));
+            }
+        }
+        tags.sort();
+        Ok(tags)
     }
 
     fn commit_tags(&self, commit_message: &str) -> Result<(), IssueError> {
