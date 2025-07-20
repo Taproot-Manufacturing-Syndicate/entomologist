@@ -499,9 +499,13 @@ fn handle_command(
                     let Some(issue) = issues.get_mut_issue(issue_id) else {
                         return Err(anyhow::anyhow!("issue {} not found", issue_id));
                     };
-                    let done_time = chrono::DateTime::parse_from_rfc3339(done_time)
-                        .unwrap()
-                        .with_timezone(&chrono::Local);
+                    let done_time = match chrono::DateTime::parse_from_rfc3339(done_time) {
+                        Ok(done_time) => done_time.with_timezone(&chrono::Local),
+                        Err(e) => {
+                            eprintln!("failed to parse done-time from {}", done_time);
+                            return Err(e.into());
+                        }
+                    };
                     issue.set_done_time(done_time)?;
                 }
                 None => match &issue.done_time {
