@@ -1,0 +1,3 @@
+yeah exactly that. just a convenience thing to be able to (from any directory) run `ent update`. 
+
+i could just make it an alias as well... not sure which is more idiomatic 
