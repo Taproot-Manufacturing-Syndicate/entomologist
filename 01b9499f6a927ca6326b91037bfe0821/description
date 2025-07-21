@@ -1,0 +1,11 @@
+collections
+
+introduce a new data structure - a "collection". 
+
+a collection is a grouping of:
+1. ent repositories
+2. other collections
+
+a collection is defined by some user-producible, machine readable file (maybe a TOML or something similar) and points to:
+1. locations of other ent repositories (local or remote) 
+2. locations of other collection files (local or remote)
