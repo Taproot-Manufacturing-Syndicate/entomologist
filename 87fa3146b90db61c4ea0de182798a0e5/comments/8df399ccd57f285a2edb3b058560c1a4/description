@@ -1,0 +1,5 @@
+noticing the following two commands are very slow: 
+* `ent comment`
+* `ent tag`
+
+`ent tag` in particular is _very_ slow
