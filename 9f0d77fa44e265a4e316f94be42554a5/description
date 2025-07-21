@@ -1,0 +1,11 @@
+`ent list` should take a git-like --pretty=format:
+
+The immediate use is:
+* list all issues in state=inprogress, but only tell me the assignees of each
+
+I currently do this with a slow and awkward shell script:
+```
+for ISSUE_ID in $(ent list state=inprogress | grep '  ' | cut -f 1 -d ' '); do
+    ent show "${ISSUE_ID}" | grep -i assign
+done
+```
