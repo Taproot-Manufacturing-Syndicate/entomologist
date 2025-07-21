@@ -212,6 +212,9 @@ impl Issue {
                 }
             }
         }
+        if let Some(deps) = &mut dependencies {
+            deps.sort();
+        }
         Ok(dependencies)
     }
 
