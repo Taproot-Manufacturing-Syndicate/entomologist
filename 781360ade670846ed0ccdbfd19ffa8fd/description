@@ -1,15 +1,114 @@
-add a layer to the architecture with a DB api between the FS and ent?
+add a database layer to the architecture between the FS and ent?
 
-This issue grew out of the discussion in issue
-08f0d7ee7842c439382816d21ec1dea2.
+This issue is to consider adding a database abstraction between the
+entomologist library and the git-backed filesystem.
 
-Currently the entomologist crate code directly reads and writes files
-and calls `git commit` when it wants.  The directory is managed by the
-application, generally as an ephemeral worktree containing a (possibly
-detached) checkout of the `entomologist-data` branch.
+Currently the entomologist library code directly reads and writes files
+and directories, and calls `git commit` when it wants.  The directory
+is generally an ephemeral worktree containing a (possibly detached)
+checkout of the `entomologist-data` branch.
 
 We may be able to simplify the ent internals (and the application)
 by adding a "database" API between ent and the filesystem.
 
-There is some preliminary design brainstorming in the issue mentioned
-above.
+(This issue grew out of the discussion in issue
+08f0d7ee7842c439382816d21ec1dea2.  I've distilled the discussion in that
+issue here.)
+
+for the filesystem DB, i think it might make sense to have a hashmap that stores everything as a key-value pair, where each key is a file, and each value is the contents of that file.
+
+once we go up the stack, i think it makes sense to have things in concrete structs, since that's easier to reason about.
+
+this also frees up the filesystem DB to get used for other things potentially, not just issues.
+
+So we'd have a system like this:
+```
+git-backed filesystem
+^
+|
+v
+db layer: key/value pair
+^
+|
+v
+entomologist library layer: concrete structs (like `Issue` etc)
+^
+|
+v
+presentation layer: (CLI / TUI / etc.)
+```
+
+
+# Entomologist library API (presented up to the applicationA)
+
+Very similar to current entomologist library API.
+
+* Open the database at this DatabaseSource (filesystem path or git branch,
+  read-only or read-write, returns an opaque "entdb"(?) handle)
+
+* List issues in entdb
+
+* Add/edit issue
+
+* Get/set issue state/tags/assignee/done-time/etc
+
+* Add/edit comment on issue
+
+
+# Database API (presented up to entomologist library)
+
+* Open the database at this DB Source (filesystem path or git branch,
+  read-only or read-write, returns an opaque "db" handle)
+
+* Read a db object into a key/value store.
+
+    - Keys are filenames.  Values are the file contents of that file,
+      or a database if the filename refers to a directory.
+
+    - The read is by default *not* recursive for performance reasons;
+      the application may choose to read a "sub-database" referred to
+      by a key in the "parent database" if it wants, when it wants.
+
+    - The application receives a k/v store and is responsible for
+      unpacking/interpreting/parsing that into some app-level struct
+      that is meaningful to the application.
+
+* Write a key-value store to a db.
+
+    - Commits by default (the application supplies the commit message),
+      though maybe we want a way to stage multiple changes and commit
+      at the end?
+
+    - The application transcodes its internal struct into a generic k/v
+      store for the db library.
+
+On write operations, the git commit message should be meaningful to
+the application.  Maybe that can be done generically by the db library,
+or maybe the application needs to supply the commit message.
+
+
+# Design
+
+A filesystem stores two kinds of things: directories and files.
+A directory contains files, and other directories.
+
+Git stores two kinds of things: trees and blobs.  Trees contain blobs,
+and other trees.
+
+This DB tracks two kinds of things: databases and key/value objects.
+Databases store key/value objects, and other databases.
+
+Some things we'd want from this DB layer:
+
+* Filesystem objects correspond to structs, like how we have each struct
+  Issue in its own issue directory.
+
+* Structs are nested, like how struct Issue contains struct Comment
+
+* Some fields are simple types (`author` is String), some are
+  less simple (`timestamp` is chrono::DateTime), some are custom
+  (`state` is enum State), and some are complicated (`dependencies`
+  is Option<Vec<IssueHandle>>, `comments` is Vec<Comment>)
+
+* Filesystem objects are optimized for getting tracked by git - minimize
+  merge conflicts.
