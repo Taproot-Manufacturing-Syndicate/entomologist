@@ -492,38 +492,37 @@ fn handle_command(
         Commands::DoneTime {
             issue_id,
             done_time,
-        } => {
-            let issues = entomologist::database::read_issues_database(issues_database_source)?;
-            let Some(issue) = issues.issues.get(issue_id) else {
-                return Err(anyhow::anyhow!("issue {} not found", issue_id));
-            };
-            match done_time {
-                Some(done_time) => {
-                    // Add or remove tag.
-                    let issues_database = entomologist::database::make_issues_database(
-                        issues_database_source,
-                        entomologist::database::IssuesDatabaseAccess::ReadWrite,
-                    )?;
-                    let mut issues =
-                        entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
-                    let Some(issue) = issues.get_mut_issue(issue_id) else {
-                        return Err(anyhow::anyhow!("issue {} not found", issue_id));
-                    };
-                    let done_time = match chrono::DateTime::parse_from_rfc3339(done_time) {
-                        Ok(done_time) => done_time.with_timezone(&chrono::Local),
-                        Err(e) => {
-                            eprintln!("failed to parse done-time from {}", done_time);
-                            return Err(e.into());
-                        }
-                    };
-                    issue.set_done_time(done_time)?;
-                }
-                None => match &issue.done_time {
+        } => match done_time {
+            Some(done_time) => {
+                // Add or remove tag.
+                let issues_database = entomologist::database::make_issues_database(
+                    issues_database_source,
+                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
+                )?;
+                let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+                let Some(issue) = issues.get_mut_issue(issue_id) else {
+                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                };
+                let done_time = match chrono::DateTime::parse_from_rfc3339(done_time) {
+                    Ok(done_time) => done_time.with_timezone(&chrono::Local),
+                    Err(e) => {
+                        eprintln!("failed to parse done-time from {}", done_time);
+                        return Err(e.into());
+                    }
+                };
+                issue.set_done_time(done_time)?;
+            }
+            None => {
+                let issues = entomologist::database::read_issues_database(issues_database_source)?;
+                let Some(issue) = issues.issues.get(issue_id) else {
+                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                };
+                match &issue.done_time {
                     Some(done_time) => println!("done_time: {}", done_time),
                     None => println!("None"),
-                },
-            };
-        }
+                };
+            }
+        },
 
         Commands::Depend {
             issue_id,
