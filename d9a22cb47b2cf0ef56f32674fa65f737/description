@@ -1,0 +1,4 @@
+teach `ent tag ISSUE TAG` to add multiple tags at once
+
+Probably use a syntax like `ent tag ISSUE TAG[,TAG...]` to match the
+filter syntax.
