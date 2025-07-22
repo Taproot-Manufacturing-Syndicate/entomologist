@@ -1,0 +1,18 @@
+I ran ent under perf with this command:
+```
+$ perf record -g -F 999 ent tag 7e2a3a59fb6b77403ff1035255367607
+```
+
+This produced `perf.data`, which i converted to the format supported by the firefox profile tool:
+```
+$ perf script -F +pid > /tmp/test.perf
+```
+
+I uploaded this to the firefox visualizer at <https://profiler.firefox.com/>.
+
+If i'm interpreting this correctly i think it's showing that we spend
+most of our time running `git log` in different ways to determine the
+author and creation-time of the issues.
+
+If so, lazy load (95a8190f4bbdcafbb4c72db81dfc2aa6) should speed up ent
+a lot.
