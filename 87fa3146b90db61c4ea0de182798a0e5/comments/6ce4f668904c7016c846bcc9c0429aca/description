@@ -1,0 +1,15 @@
+`perf` shows that the majority of the time it takes to run "ent anything"
+is spent reading the issue database, and the majority of the time it
+takes to read the database is spend running `git log` to find the author
+and ctime of issues and comments.
+
+I've reducted this a bit (in the `speed-test` git branch) by running
+`git log` half as many times, but the shape of the flame graph remains
+the same.
+
+We've discussed lazy-loading things to avoid doing this work when we don't
+need to.  For example, if we're trying to look up the tags off issue A,
+there's no need to ingest all the comments of issue B.
+
+Another option is to store Author and Creation-time the normal way,
+as files in the issue directory.  We'd never have to run `git log` at all.
