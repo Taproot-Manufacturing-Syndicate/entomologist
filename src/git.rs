@@ -395,6 +395,46 @@ pub fn git_log_oldest_author(path: &std::path::Path) -> Result<String, GitError>
     Ok(String::from(author_last))
 }
 
+pub fn git_log_oldest_author_timestamp(
+    path: &std::path::Path,
+) -> Result<(String, chrono::DateTime<chrono::Local>), GitError> {
+    let mut git_dir = std::path::PathBuf::from(path);
+    git_dir.pop();
+    let result = std::process::Command::new("git")
+        .args([
+            "log",
+            "--pretty=format:%at %an <%ae>",
+            "--",
+            &path
+                .file_name()
+                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
+                .to_string_lossy(),
+        ])
+        .current_dir(&git_dir)
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
+        return Err(GitError::Oops);
+    }
+
+    let raw_output_str = String::from_utf8_lossy(&result.stdout);
+    let Some(raw_output_last) = raw_output_str.split("\n").last() else {
+        return Err(GitError::Oops);
+    };
+    let Some(index) = raw_output_last.find(' ') else {
+        return Err(GitError::Oops);
+    };
+    let author_str = &raw_output_last[index + 1..];
+    let timestamp_str = &raw_output_last[0..index];
+    let timestamp_i64 = timestamp_str.parse::<i64>()?;
+    let timestamp = chrono::DateTime::from_timestamp(timestamp_i64, 0)
+        .unwrap()
+        .with_timezone(&chrono::Local);
+
+    Ok((String::from(author_str), timestamp))
+}
+
 pub fn create_orphan_branch(branch: &str) -> Result<(), GitError> {
     {
         let tmp_worktree = tempfile::tempdir().unwrap();
