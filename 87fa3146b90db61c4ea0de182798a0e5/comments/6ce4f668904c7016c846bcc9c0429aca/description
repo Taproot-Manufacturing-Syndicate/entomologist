@@ -13,4 +13,6 @@ there's no need to ingest all the comments of issue B.
 
 Another option is to store Author and Creation-time the normal way, as
 files in the issue directory.  We'd never have to run `git log` at all.
-I've verified that this makes ent *very* fast.
+I've verified that this makes ent *very* fast.  This is a much easier
+change than lazy-loading.  I opened issue 50012ba39d8dac21ac122affe92c4160
+to make this switch.
