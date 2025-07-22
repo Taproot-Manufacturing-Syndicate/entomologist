@@ -8,8 +8,9 @@ I've reducted this a bit (in the `speed-test` git branch) by running
 the same.
 
 We've discussed lazy-loading things to avoid doing this work when we don't
-need to.  For example, if we're trying to look up the tags off issue A,
+need to.  For example, if we're trying to look up the tags of issue A,
 there's no need to ingest all the comments of issue B.
 
-Another option is to store Author and Creation-time the normal way,
-as files in the issue directory.  We'd never have to run `git log` at all.
+Another option is to store Author and Creation-time the normal way, as
+files in the issue directory.  We'd never have to run `git log` at all.
+I've verified that this makes ent *very* fast.
