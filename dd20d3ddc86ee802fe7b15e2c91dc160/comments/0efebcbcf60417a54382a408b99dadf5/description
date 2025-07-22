@@ -1,0 +1,21 @@
+There's a fly in the ointment: we want to store tags as files in a
+directory, but file names are not allowed to contain the character `/`,
+and some of our current tags use `/` in the tag name.
+
+We could allow subdirectories of the `tags` directory, but it feels
+like that breaks the budding database abstraction of "a directory is a
+key/value store, filenames are the keys, file contents are the values".
+
+We could forbid `/` in tags and replace them with `.` or `_` or something,
+but that's a bit sad because i like `/` as the "hierarchy separator".
+
+Wikipedia claims, and experiment confirms:
+> The big solidus ⧸ (Unicode code point U+29F8) is permitted in Unix
+> and Windows filenames.
+
+<https://en.wikipedia.org/wiki/Filename#Problematic_characters>
+
+But that feels like madness.
+
+I think the least worst option is to replace `/` with `.` in tags.
+Opinions?
