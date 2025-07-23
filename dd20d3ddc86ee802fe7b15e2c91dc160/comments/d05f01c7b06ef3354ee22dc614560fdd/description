@@ -1,0 +1,16 @@
+Another option is to escape '/' in tags when turning them into filenames.
+
+Let's somewhat arbitrarily say we use ',' as the escape character.
+
+',' in a tag would be replaced with the two-character sequence ',0'
+in the filename.
+
+'/' in a tag would be replaced with ',1' in the filename.
+
+(And so on for any other characters we need to escape.)
+
+This would give the user the behavior we want, which is to be free to use
+'/' in tags.
+
+The implementation detail of escaped tags would be hidden from the user
+unless they dug into the on-disk format by hand.
