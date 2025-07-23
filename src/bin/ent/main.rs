@@ -415,116 +415,114 @@ fn handle_command(
         Commands::Assign {
             issue_id,
             new_assignee,
-        } => {
-            let issues = entomologist::database::read_issues_database(issues_database_source)?;
-            let Some(original_issue) = issues.issues.get(issue_id) else {
-                return Err(anyhow::anyhow!("issue {} not found", issue_id));
-            };
-            let old_assignee: String = match &original_issue.assignee {
-                Some(assignee) => assignee.clone(),
-                None => String::from("None"),
-            };
-            println!("issue: {}", issue_id);
-            match new_assignee {
-                Some(new_assignee) => {
-                    let issues_database = entomologist::database::make_issues_database(
-                        issues_database_source,
-                        entomologist::database::IssuesDatabaseAccess::ReadWrite,
-                    )?;
-                    let mut issues =
-                        entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
-                    let Some(issue) = issues.get_mut_issue(issue_id) else {
-                        return Err(anyhow::anyhow!("issue {} not found", issue_id));
-                    };
-                    println!("assignee: {} -> {}", old_assignee, new_assignee);
-                    issue.set_assignee(new_assignee)?;
+        } => match new_assignee {
+            Some(new_assignee) => {
+                let issues_database = entomologist::database::make_issues_database(
+                    issues_database_source,
+                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
+                )?;
+                let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+                let Some(issue) = issues.get_mut_issue(issue_id) else {
+                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                };
+                let old_assignee: String = match &issue.assignee {
+                    Some(assignee) => assignee.clone(),
+                    None => String::from("None"),
+                };
+                issue.set_assignee(new_assignee)?;
+                println!("issue: {}", issue_id);
+                println!("assignee: {} -> {}", old_assignee, new_assignee);
+            }
+            None => {
+                let issues = entomologist::database::read_issues_database(issues_database_source)?;
+                let Some(original_issue) = issues.issues.get(issue_id) else {
+                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                };
+                let old_assignee: String = match &original_issue.assignee {
+                    Some(assignee) => assignee.clone(),
+                    None => String::from("None"),
+                };
+                println!("issue: {}", issue_id);
+                println!("assignee: {}", old_assignee);
+            }
+        },
+
+        Commands::Tag { issue_id, tag } => match tag {
+            Some(tag) => {
+                // Add or remove tag.
+                if tag.len() == 0 {
+                    return Err(anyhow::anyhow!("invalid zero-length tag"));
                 }
-                None => {
-                    println!("assignee: {}", old_assignee);
+                let issues_database = entomologist::database::make_issues_database(
+                    issues_database_source,
+                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
+                )?;
+                let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+                let Some(issue) = issues.get_mut_issue(issue_id) else {
+                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                };
+                if tag.chars().nth(0).unwrap() == '-' {
+                    let tag = &tag[1..];
+                    issue.remove_tag(tag)?;
+                } else {
+                    issue.add_tag(tag)?;
                 }
             }
-        }
-
-        Commands::Tag { issue_id, tag } => {
-            let issues = entomologist::database::read_issues_database(issues_database_source)?;
-            let Some(issue) = issues.issues.get(issue_id) else {
-                return Err(anyhow::anyhow!("issue {} not found", issue_id));
-            };
-            match tag {
-                Some(tag) => {
-                    // Add or remove tag.
-                    let issues_database = entomologist::database::make_issues_database(
-                        issues_database_source,
-                        entomologist::database::IssuesDatabaseAccess::ReadWrite,
-                    )?;
-                    let mut issues =
-                        entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
-                    let Some(issue) = issues.get_mut_issue(issue_id) else {
-                        return Err(anyhow::anyhow!("issue {} not found", issue_id));
-                    };
-                    if tag.len() == 0 {
-                        return Err(anyhow::anyhow!("invalid zero-length tag"));
-                    }
-                    if tag.chars().nth(0).unwrap() == '-' {
-                        let tag = &tag[1..];
-                        issue.remove_tag(tag)?;
-                    } else {
-                        issue.add_tag(tag)?;
-                    }
-                }
-                None => {
-                    // Just list the tags.
-                    match &issue.tags.len() {
-                        0 => println!("no tags"),
-                        _ => {
-                            // Could use `format!(" {:?}", issue.tags)`
-                            // here, but that results in `["tag1", "TAG2",
-                            // "i-am-also-a-tag"]` and i don't want the
-                            // double-quotes around each tag.
-                            for tag in &issue.tags {
-                                println!("{}", tag);
-                            }
+            None => {
+                // Just list the tags.
+                let issues = entomologist::database::read_issues_database(issues_database_source)?;
+                let Some(issue) = issues.issues.get(issue_id) else {
+                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                };
+                match &issue.tags.len() {
+                    0 => println!("no tags"),
+                    _ => {
+                        // Could use `format!(" {:?}", issue.tags)`
+                        // here, but that results in `["tag1", "TAG2",
+                        // "i-am-also-a-tag"]` and i don't want the
+                        // double-quotes around each tag.
+                        for tag in &issue.tags {
+                            println!("{}", tag);
                         }
                     }
                 }
             }
-        }
+        },
 
         Commands::DoneTime {
             issue_id,
             done_time,
-        } => {
-            let issues = entomologist::database::read_issues_database(issues_database_source)?;
-            let Some(issue) = issues.issues.get(issue_id) else {
-                return Err(anyhow::anyhow!("issue {} not found", issue_id));
-            };
-            match done_time {
-                Some(done_time) => {
-                    // Add or remove tag.
-                    let issues_database = entomologist::database::make_issues_database(
-                        issues_database_source,
-                        entomologist::database::IssuesDatabaseAccess::ReadWrite,
-                    )?;
-                    let mut issues =
-                        entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
-                    let Some(issue) = issues.get_mut_issue(issue_id) else {
-                        return Err(anyhow::anyhow!("issue {} not found", issue_id));
-                    };
-                    let done_time = match chrono::DateTime::parse_from_rfc3339(done_time) {
-                        Ok(done_time) => done_time.with_timezone(&chrono::Local),
-                        Err(e) => {
-                            eprintln!("failed to parse done-time from {}", done_time);
-                            return Err(e.into());
-                        }
-                    };
-                    issue.set_done_time(done_time)?;
-                }
-                None => match &issue.done_time {
+        } => match done_time {
+            Some(done_time) => {
+                // Add or remove tag.
+                let issues_database = entomologist::database::make_issues_database(
+                    issues_database_source,
+                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
+                )?;
+                let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+                let Some(issue) = issues.get_mut_issue(issue_id) else {
+                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                };
+                let done_time = match chrono::DateTime::parse_from_rfc3339(done_time) {
+                    Ok(done_time) => done_time.with_timezone(&chrono::Local),
+                    Err(e) => {
+                        eprintln!("failed to parse done-time from {}", done_time);
+                        return Err(e.into());
+                    }
+                };
+                issue.set_done_time(done_time)?;
+            }
+            None => {
+                let issues = entomologist::database::read_issues_database(issues_database_source)?;
+                let Some(issue) = issues.issues.get(issue_id) else {
+                    return Err(anyhow::anyhow!("issue {} not found", issue_id));
+                };
+                match &issue.done_time {
                     Some(done_time) => println!("done_time: {}", done_time),
                     None => println!("None"),
-                },
-            };
-        }
+                };
+            }
+        },
 
         Commands::Depend {
             issue_id,

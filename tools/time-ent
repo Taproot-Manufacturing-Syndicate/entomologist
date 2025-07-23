@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# * Create a temporary ent issue database branch based on a specific
+#   commit in `entomologist-data`.
+#
+# * Perform some ent operations on this temporary branch and measure
+#   the runtime.
+#
+# * Clean up by deleteting the temporary branch.
+
+set -e
+#set -x
+
+
+# This is a commit in the `entomologist-data` branch that we're somewhat
+# arbitrarily using here to time different `ent` operations.
+TEST_COMMIT=a33f1165d77571d770f1a1021afe4c07360247f0
+
+# This is the branch that we create from the above commit and test our
+# `ent` operations on.  We'll delete this branch when we're done with
+# the tests.
+TEST_BRANCH=$(mktemp --dry-run entomologist-data-XXXXXXXX)
+
+
+function time_ent() {
+    echo timing: ent "$@"
+    time -p ent -b "${TEST_BRANCH}" "$@"
+    echo
+}
+
+
+git branch "${TEST_BRANCH}" "${TEST_COMMIT}"
+
+time_ent tag 7e2a3a59fb6b77403ff1035255367607
+time_ent tag 7e2a3a59fb6b77403ff1035255367607 new-tag
+
+time_ent assign 7e2a3a59fb6b77403ff1035255367607
+time_ent assign 7e2a3a59fb6b77403ff1035255367607 new-user
+
+time_ent done-time 7e2a3a59fb6b77403ff1035255367607
+time_ent done-time 7e2a3a59fb6b77403ff1035255367607 2025-04-01T01:23:45-06:00
+
+git branch -D "${TEST_BRANCH}"

@@ -166,8 +166,7 @@ impl Issue {
             Err(IssueError::IdError)?
         };
 
-        let author = crate::git::git_log_oldest_author(dir)?;
-        let creation_time = crate::git::git_log_oldest_timestamp(dir)?;
+        let (author, creation_time) = crate::git::git_log_oldest_author_timestamp(dir)?;
 
         Ok(Self {
             id,

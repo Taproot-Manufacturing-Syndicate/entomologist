@@ -52,8 +52,8 @@ impl Comment {
             return Err(CommentError::CommentParseError);
         };
 
-        let author = crate::git::git_log_oldest_author(comment_dir)?;
-        let creation_time = crate::git::git_log_oldest_timestamp(comment_dir)?;
+        let (author, creation_time) = crate::git::git_log_oldest_author_timestamp(comment_dir)?;
+
         let dir = std::path::PathBuf::from(comment_dir);
 
         Ok(Self {
