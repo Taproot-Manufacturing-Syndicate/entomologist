@@ -1,0 +1,10 @@
+got the initial framework laid out tonight - some of the naming i'm still not happy with, so it'll take some staring at that to figure out what feels right. 
+
+i'm not entirely sure the direction of... type responsibility..? that this is implementing is correct either, but we'll see. 
+
+right now i have a two test cases, one which is passing, and the other which isn't passing yet, because i still have `todo!()`s for the vec implementation (needs to make a dir) 
+
+dir naming is another thing i'm not totally happy about yet as well.
+
+
+but it's a start! 
