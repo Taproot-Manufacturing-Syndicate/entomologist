@@ -548,6 +548,7 @@ impl Issue {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn read_issue_0() {

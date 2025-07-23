@@ -502,6 +502,7 @@ fn create_orphan_branch_at_path(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_worktree() {
