@@ -1,0 +1,1 @@
+will need an attachments manager, since we probably want to be passing around handles and not actual file data... unless we move the struct remotely? will have to think about it 
