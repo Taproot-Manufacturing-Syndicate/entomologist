@@ -6,6 +6,8 @@ pub mod git;
 pub mod issue;
 pub mod issues;
 
+pub mod entry;
+
 use crate::issue::State;
 
 #[derive(Debug, thiserror::Error)]
