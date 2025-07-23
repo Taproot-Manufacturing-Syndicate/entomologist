@@ -1,3 +1,6 @@
 make generic Entry<T> type which can get put in FS
 
 make a new type, Entry<T: Enterable> which allows things to get put into / taken out of the filesystem
+
+
+branch: `03/entries`
