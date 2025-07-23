@@ -1,0 +1,7 @@
+i have some work which might take care of this which is happening here: 
+
+entomologist:cffd805252f9a2b4373abf7852d9e750
+
+this creates a new type Entry<T>, which has the basic author / creation-time / id as files, and then stores T in the filesystem however it likes to be stored. 
+
+it's still a ways off, but maybe it's worth waiting for so we don't have duplicate work? and for now we can just live with the git log penalty. 
