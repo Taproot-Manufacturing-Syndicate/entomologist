@@ -1,0 +1,18 @@
+I added a simple performance-measuring tool, `tools/time-ent`.  It runs
+ent a couple of different ways, against a known entomologist-data branch
+(specified by a commit in the regular entomologist-data branch in this
+repo).  That script gives a rough, over-all measurement of how long
+different ent commands take.
+
+More detailed information, including the call tree and flame graph,
+can be gathered like this:
+
+```
+$ perf record -g -F 999 ent tag 7e2a3a59fb6b77403ff1035255367607
+$ perf script -F +pid > /tmp/test.perf
+```
+
+Then upload the `test.perf` file to the firefox visualizer at
+<https://profiler.firefox.com/>.
+
+A local visualizer would be nice, i'm sure there is one somewhere.
