@@ -1,0 +1,10 @@
+Yeah that red blob 🛑 is super heavy, and the octagonal shape is pretty
+subtle - it looks more like a stop light than a stop sign.
+
+I like your thought of somehow showing the state of the issues we
+dependend on...  How about showing the count of not-Done dependencies?
+And once all the dependencies are Done, not showing the ↖ or ⌛ or
+whatever at all.
+
+In the `ent show` output we could list all dependencies with a ↖ or
+⌛ for the not-Done ones and a ✅ for the Done ones.
