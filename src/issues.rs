@@ -172,28 +172,19 @@ mod tests {
             dir,
         });
 
-        let uuid = String::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561");
+        let uuid = String::from("dd79c8cfb8beeacd0460429944b4ecbe");
         let mut dir = std::path::PathBuf::from(issues_dir);
         dir.push(&uuid);
         let mut comment_dir = dir.clone();
         let comment_uuid = String::from("9055dac36045fe36545bed7ae7b49347");
         comment_dir.push("comments");
         comment_dir.push(&comment_uuid);
-        let mut expected_comments = Vec::<crate::comment::Comment>::new();
-        expected_comments.push(
-            crate::comment::Comment {
-                uuid: comment_uuid,
-                author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-07T15:26:26-06:00").unwrap().with_timezone(&chrono::Local),
-                description: String::from("This is a comment on issue dd79c8cfb8beeacd0460429944b4ecbe95a31561\n\nIt has multiple lines\n"),
-                dir: std::path::PathBuf::from(comment_dir),
-            }
-        );
+        let expected_comments = Vec::<crate::comment::Comment>::new();
         expected.add_issue(
             crate::issue::Issue {
                 id: uuid,
                 author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T11:59:44-06:00")
+                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T10:08:24-06:00")
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 done_time: None,
