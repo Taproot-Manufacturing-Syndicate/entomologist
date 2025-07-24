@@ -235,14 +235,14 @@ mod tests {
             dir,
         });
 
-        let uuid = String::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561");
+        let uuid = String::from("dd79c8cfb8beeacd0460429944b4ecbe");
         let mut dir = std::path::PathBuf::from(issues_dir);
         dir.push(&uuid);
         expected.add_issue(
             crate::issue::Issue {
                 id: uuid,
                 author: String::from("sigil-03 <sigil@glyphs.tech>"),
-                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
+                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:39:20-06:00")
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 done_time: None,
