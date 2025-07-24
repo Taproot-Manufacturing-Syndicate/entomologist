@@ -96,13 +96,13 @@ mod tests {
 
         let mut expected = Issues::new();
 
-        let uuid = String::from("7792b063eef6d33e7da5dc1856750c149ba678c6");
+        let uuid = String::from("7792b063eef6d33e7da5dc1856750c14");
         let mut dir = std::path::PathBuf::from(issues_dir);
         dir.push(&uuid);
         expected.add_issue(crate::issue::Issue {
             id: uuid,
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:37:07-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
             done_time: None,

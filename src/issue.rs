@@ -581,12 +581,12 @@ mod tests {
 
     #[test]
     fn read_issue_1() {
-        let issue_dir = std::path::Path::new("test/0000/7792b063eef6d33e7da5dc1856750c149ba678c6/");
+        let issue_dir = std::path::Path::new("test/0000/7792b063eef6d33e7da5dc1856750c14/");
         let issue = Issue::new_from_dir(issue_dir).unwrap();
         let expected = Issue {
-            id: String::from("7792b063eef6d33e7da5dc1856750c149ba678c6"),
+            id: String::from("7792b063eef6d33e7da5dc1856750c14"),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:37:07-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
             done_time: None,
