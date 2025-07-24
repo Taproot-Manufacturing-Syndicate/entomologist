@@ -179,7 +179,16 @@ mod tests {
         let comment_uuid = String::from("9055dac36045fe36545bed7ae7b49347");
         comment_dir.push("comments");
         comment_dir.push(&comment_uuid);
-        let expected_comments = Vec::<crate::comment::Comment>::new();
+        let mut expected_comments = Vec::<crate::comment::Comment>::new();
+        expected_comments.push(
+            crate::comment::Comment {
+                uuid: comment_uuid,
+                author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
+                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T10:08:38-06:00").unwrap().with_timezone(&chrono::Local),
+                description: String::from("This is a comment on issue dd79c8cfb8beeacd0460429944b4ecbe\n\nIt has multiple lines\n"),
+                dir: std::path::PathBuf::from(comment_dir),
+            }
+        );
         expected.add_issue(
             crate::issue::Issue {
                 id: uuid,
