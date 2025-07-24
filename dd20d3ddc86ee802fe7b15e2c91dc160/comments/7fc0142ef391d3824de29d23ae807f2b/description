@@ -1,0 +1,49 @@
+We've discussed three options for how to store tags:
+
+1. Each tag is a line in the file "${ISSUE}/tags".  This is what we
+   use now.
+
+   This one is bad because git conflicts are inevitable when people
+   add/remove tags near each other.  This problem is what's prompting
+   this whole issue.
+
+2. Each tag is a file in the directory "${ISSUE}/tags/", with characters
+   that are illegal in filenames (notably '/') escaped.  For example,
+   the tag "tui/v0.1" would live in "${ISSUE}/tags/tui,1v0.1".
+
+   This one looks a bit weird.
+
+3. Each tag is a file somewhere under the directory "${ISSUE}/tags/",
+   and tags that include the character '/' live in subdirectories
+   matching the tag name.  For example, the tag "tui/v0.1" would live in
+   "${ISSUE}/tags/tui/v0.1".
+
+   I like this option but i'm a bit unsure of how some aspects would
+   work...
+
+How should entomologist handle "${ISSUE}/tags/tui/v0.1"?  Does this
+issue have one tag ("tui/v0.1") or two tags ("tui" and "tui/v0.1")?
+
+If a user runs `ent tag ${ISSUE} tui/v0.1`, i think it would be a bit
+surprising if the issue now has both "tui/v0.1" like they asked for,
+and also "tui" which they didn't ask for.  But maybe that's just how
+hierarchical tags work?
+
+What happens if the user runs "ent tag ${ISSUE} tui/v0.1", then "ent
+tag ${ISSUE} -tui" to remove "tui"?  Does entomologist refuse, or does
+it also remove "tui/v0.1"?  Probably it refuses, again because that's
+how hierarchical tags work - you (obviously?) can't have "tui/v0.1"
+without also having "tui".
+
+What happens if the user runs "ent tag ${ISSUE} tui/v0.1", then runs
+"ent tag ${ISSUE} -tui/v0.1"?  Let's assume "v0.1" is the only file in
+the "tags/tui/" directory.  Probably we remove the "tags/tui" directory,
+and now the issue has no tags?  Again a bit surprising imo.
+
+If a user adds a tag "tui", it creates the file "${ISSUE}/tags/tui".
+If the user then adds "tui/v0.1" entomologist will have to delete the
+"tui" file and replace it with a "tui/" directory, then add a "v0.1"
+file to that directory, but that's no big deal.
+
+If one user adds the tag "tui", and another user adds the tag(s)
+"tui/v0.1", there will be a git conflict on sync.
