@@ -674,6 +674,11 @@ mod tests {
             done_time: None,
             tags: Vec::<String>::from([
                 String::from("TAG2"),
+                String::from("bird/wing"),
+                String::from("bird/wing/feather"),
+                String::from("deer,antler"),
+                String::from("deer,antler,tassle"),
+                String::from("hop,scotch/shoe"),
                 String::from("i-am-also-a-tag"),
                 String::from("tag1"),
             ]),
