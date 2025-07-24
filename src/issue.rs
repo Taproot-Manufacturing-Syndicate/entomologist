@@ -577,12 +577,28 @@ impl Issue {
         Ok(tag)
     }
 
+    // Perform escape on a tag to make it into a filename:
+    // "," => ",0"
+    // "/" => ",1"
+    fn tag_to_filename(tag: &str) -> String {
+        let mut filename = tag.replace(",", ",0");
+        filename = filename.replace("/", ",1");
+        return filename;
+    }
+
     fn commit_tags(&self, commit_message: &str) -> Result<(), IssueError> {
-        let mut tags_filename = self.dir.clone();
-        tags_filename.push("tags");
-        let mut tags_file = std::fs::File::create(&tags_filename)?;
+        let mut tags_dir_name = self.dir.clone();
+        tags_dir_name.push("tags");
+        match std::fs::remove_dir_all(&tags_dir_name) {
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
+            Err(e) => return Err(e.into()),
+            Ok(_) => (),
+        }
+        std::fs::create_dir(&tags_dir_name)?;
         for tag in &self.tags {
-            writeln!(tags_file, "{}", tag)?;
+            let mut tag_filename = tags_dir_name.clone();
+            tag_filename.push(Issue::tag_to_filename(tag));
+            std::fs::File::create(&tag_filename)?;
         }
         self.commit(commit_message)?;
         Ok(())
@@ -659,6 +675,42 @@ mod tests {
             ),
             Err(_e) => (),
         }
+    }
+
+    #[test]
+    fn tag_to_filename_0() {
+        let tag = "hello";
+        assert_eq!(Issue::tag_to_filename(tag), "hello");
+    }
+
+    #[test]
+    fn tag_to_filename_1() {
+        let tag = "hello,";
+        assert_eq!(Issue::tag_to_filename(tag), "hello,0");
+    }
+
+    #[test]
+    fn tag_to_filename_2() {
+        let tag = "/hello";
+        assert_eq!(Issue::tag_to_filename(tag), ",1hello");
+    }
+
+    #[test]
+    fn tag_to_filename_3() {
+        let tag = "hello/bye,boo";
+        assert_eq!(Issue::tag_to_filename(tag), "hello,1bye,0boo");
+    }
+
+    #[test]
+    fn tag_to_filename_4() {
+        let tag = ",,,///,,,";
+        assert_eq!(Issue::tag_to_filename(tag), ",0,0,0,1,1,1,0,0,0");
+    }
+
+    #[test]
+    fn tag_to_filename_5() {
+        let tag = ",0,0,1,1";
+        assert_eq!(Issue::tag_to_filename(tag), ",00,00,01,01");
     }
 
     #[test]
