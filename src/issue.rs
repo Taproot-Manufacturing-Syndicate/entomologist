@@ -48,6 +48,10 @@ pub enum IssueError {
     ChronoParseError(#[from] chrono::format::ParseError),
     #[error("Failed to parse issue")]
     IssueParseError,
+    #[error("invalid escape character {escape:?} in tag file {filename:?}")]
+    TagInvalidEscape { escape: String, filename: String },
+    #[error("invalid trailing escape character ',' in tag file {filename:?}")]
+    TagTrailingEscape { filename: String },
     #[error("Failed to parse state")]
     StateParseError,
     #[error("Failed to run git")]
@@ -527,11 +531,50 @@ impl Issue {
         let mut tags = Vec::<String>::new();
         for direntry in tags_direntry.path().read_dir()? {
             if let Ok(direntry) = direntry {
-                tags.push(String::from(direntry.file_name().to_string_lossy()));
+                let tag = Issue::tag_from_filename(&direntry.file_name().to_string_lossy())?;
+                tags.push(tag);
             }
         }
         tags.sort();
         Ok(tags)
+    }
+
+    /// Perform un-escape on a filename to make it into a tag:
+    /// ",0" => ","
+    /// ",1" => "/"
+    fn tag_from_filename(filename: &str) -> Result<String, IssueError> {
+        let mut tag = String::new();
+        let mut token_iter = filename.split(',');
+        let Some(start) = token_iter.next() else {
+            return Err(IssueError::StdIoError(std::io::Error::from(
+                std::io::ErrorKind::NotFound,
+            )));
+        };
+        tag.push_str(start);
+        for token in token_iter {
+            match token.chars().nth(0) {
+                Some('0') => {
+                    tag.push(',');
+                    tag.push_str(&token[1..]);
+                }
+                Some('1') => {
+                    tag.push('/');
+                    tag.push_str(&token[1..]);
+                }
+                Some(bogus) => {
+                    return Err(IssueError::TagInvalidEscape {
+                        escape: String::from(bogus),
+                        filename: String::from(filename),
+                    });
+                }
+                None => {
+                    return Err(IssueError::TagTrailingEscape {
+                        filename: String::from(filename),
+                    });
+                }
+            }
+        }
+        Ok(tag)
     }
 
     fn commit_tags(&self, commit_message: &str) -> Result<(), IssueError> {
@@ -559,6 +602,64 @@ impl Issue {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn tag_from_filename_0() {
+        assert_eq!(
+            Issue::tag_from_filename("hello").unwrap(),
+            String::from("hello")
+        );
+    }
+
+    #[test]
+    fn tag_from_filename_1() {
+        assert_eq!(
+            Issue::tag_from_filename("hello,0world").unwrap(),
+            String::from("hello,world")
+        );
+    }
+
+    #[test]
+    fn tag_from_filename_2() {
+        assert_eq!(
+            Issue::tag_from_filename("hello,1world").unwrap(),
+            String::from("hello/world")
+        );
+    }
+
+    #[test]
+    fn tag_from_filename_3() {
+        assert_eq!(
+            Issue::tag_from_filename(",0hello,1world,0").unwrap(),
+            String::from(",hello/world,")
+        );
+    }
+
+    #[test]
+    fn tag_from_filename_4() {
+        // std::io::Error does not impl PartialEq :-(
+        let filename = "hello,";
+        match Issue::tag_from_filename(filename) {
+            Ok(tag) => panic!(
+                "tag_from_filename() accepted invalid input {:?} and returned {:?}",
+                filename, tag
+            ),
+            Err(_e) => (),
+        }
+    }
+
+    #[test]
+    fn tag_from_filename_5() {
+        // std::io::Error does not impl PartialEq :-(
+        let filename = "hello,world";
+        match Issue::tag_from_filename(filename) {
+            Ok(tag) => panic!(
+                "tag_from_filename() accepted invalid input {:?} and returned {:?}",
+                filename, tag
+            ),
+            Err(_e) => (),
+        }
+    }
 
     #[test]
     fn read_issue_0() {
