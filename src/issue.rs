@@ -143,6 +143,7 @@ impl Issue {
                         .filter(|s| s.len() > 0)
                         .map(|tag| String::from(tag.trim()))
                         .collect();
+                    tags.sort();
                 } else if file_name == "comments" && direntry.metadata()?.is_dir() {
                     Self::read_comments(&mut comments, &direntry.path())?;
                 } else {
@@ -562,9 +563,9 @@ mod tests {
                 .with_timezone(&chrono::Local),
             done_time: None,
             tags: Vec::<String>::from([
-                String::from("tag1"),
                 String::from("TAG2"),
                 String::from("i-am-also-a-tag"),
+                String::from("tag1"),
             ]),
             state: State::New,
             dependencies: None,

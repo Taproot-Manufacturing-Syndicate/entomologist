@@ -127,9 +127,9 @@ mod tests {
                     .with_timezone(&chrono::Local),
                 done_time: None,
                 tags: Vec::<String>::from([
-                    String::from("tag1"),
                     String::from("TAG2"),
-                    String::from("i-am-also-a-tag")
+                    String::from("i-am-also-a-tag"),
+                    String::from("tag1"),
                 ]),
                 state: crate::issue::State::New,
                 dependencies: None,
