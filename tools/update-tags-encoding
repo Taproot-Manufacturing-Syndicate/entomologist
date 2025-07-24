@@ -12,6 +12,13 @@
 set -e
 #set -x
 
+function escape_tag() {
+    TAG="$1"
+    TAG=$(echo "${TAG}" | sed -re 's/,/,0/g')
+    TAG=$(echo "${TAG}" | sed -re 's/\//,1/g')
+    echo "${TAG}"
+}
+
 BRANCH=""
 
 if [[ -n "$1" ]] && [[ -d "$1" ]]; then
@@ -58,6 +65,7 @@ for ISSUE_ID in $(find . -maxdepth 1 -type d -regextype posix-extended -regex '\
 
     mkdir tags
     for TAG in ${TAGS}; do
+        TAG=$(escape_tag "${TAG}")
         touch "tags/${TAG}"
     done
 
