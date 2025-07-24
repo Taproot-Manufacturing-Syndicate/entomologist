@@ -256,22 +256,22 @@ mod tests {
             },
         );
 
-        let uuid = String::from("a85f81fc5f14cb5d4851dd445dc9744c7f16ccc7");
+        let uuid = String::from("a85f81fc5f14cb5d4851dd445dc9744c");
         let mut dir = std::path::PathBuf::from(issues_dir);
         dir.push(&uuid);
         expected.add_issue(
             crate::issue::Issue {
                 id: uuid,
                 author: String::from("sigil-03 <sigil@glyphs.tech>"),
-                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-05T13:55:49-06:00")
+                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:39:02-06:00")
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 done_time: None,
                 tags: Vec::<String>::new(),
                 state: crate::issue::State::WontDo,
                 dependencies: Some(vec![
-                    crate::issue::IssueHandle::from("3fa5bfd93317ad25772680071d5ac3259cd2384f"),
-                    crate::issue::IssueHandle::from("dd79c8cfb8beeacd0460429944b4ecbe95a31561"),
+                    crate::issue::IssueHandle::from("3fa5bfd93317ad25772680071d5ac325"),
+                    crate::issue::IssueHandle::from("dd79c8cfb8beeacd0460429944b4ecbe"),
                 ]),
                 assignee: None,
                 description: String::from("issue with dependencies\n\na test has begun\nfor dependencies we seek\nintertwining life"),
