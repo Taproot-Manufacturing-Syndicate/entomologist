@@ -1,0 +1,15 @@
+teach `ent sync` to scan `main` branch commits for special commands
+
+I'm thinking primarily of "Fixes: abc123" but maybe there are others?
+
+ent could be informed of the main branch name via
+entomologist-data:config.toml, and use a special tag pointing at the
+most recent commit in that branch that it has processed.  When you run
+`ent sync`, after it runs `git fetch` it could log the main branch from
+its tagged commit to the just-fetched branch head, read all the commit
+messages, and find and process all the ent commands.  Then finally move
+its tag to the new main branch head.
+
+This way you could put an ent command like "Fixes: abc123" in a bugfix
+commit, and after you merge that branch to main, the next ent sync will
+mark issue abc123 as done for you.
