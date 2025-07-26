@@ -143,6 +143,7 @@ impl Issue {
                         .filter(|s| s.len() > 0)
                         .map(|tag| String::from(tag.trim()))
                         .collect();
+                    tags.sort();
                 } else if file_name == "comments" && direntry.metadata()?.is_dir() {
                     Self::read_comments(&mut comments, &direntry.path())?;
                 } else {
@@ -548,22 +549,23 @@ impl Issue {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn read_issue_0() {
-        let issue_dir = std::path::Path::new("test/0000/3943fc5c173fdf41c0a22251593cd476d96e6c9f/");
+        let issue_dir = std::path::Path::new("test/0000/3943fc5c173fdf41c0a22251593cd476/");
         let issue = Issue::new_from_dir(issue_dir).unwrap();
         let expected = Issue {
-            id: String::from("3943fc5c173fdf41c0a22251593cd476d96e6c9f"),
+            id: String::from("3943fc5c173fdf41c0a22251593cd476"),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:36:25-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
             done_time: None,
             tags: Vec::<String>::from([
-                String::from("tag1"),
                 String::from("TAG2"),
                 String::from("i-am-also-a-tag"),
+                String::from("tag1"),
             ]),
             state: State::New,
             dependencies: None,
@@ -579,12 +581,12 @@ mod tests {
 
     #[test]
     fn read_issue_1() {
-        let issue_dir = std::path::Path::new("test/0000/7792b063eef6d33e7da5dc1856750c149ba678c6/");
+        let issue_dir = std::path::Path::new("test/0000/7792b063eef6d33e7da5dc1856750c14/");
         let issue = Issue::new_from_dir(issue_dir).unwrap();
         let expected = Issue {
-            id: String::from("7792b063eef6d33e7da5dc1856750c149ba678c6"),
+            id: String::from("7792b063eef6d33e7da5dc1856750c14"),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-03T12:14:26-06:00")
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:37:07-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
             done_time: None,

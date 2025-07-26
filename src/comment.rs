@@ -208,19 +208,21 @@ impl Comment {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn read_comment_0() {
-        let comment_dir =
-            std::path::Path::new("test/0001/dd79c8cfb8beeacd0460429944b4ecbe95a31561/comments/9055dac36045fe36545bed7ae7b49347");
+        let comment_dir = std::path::Path::new(
+            "test/0001/dd79c8cfb8beeacd0460429944b4ecbe/comments/9055dac36045fe36545bed7ae7b49347",
+        );
         let comment = Comment::new_from_dir(comment_dir).unwrap();
         let expected = Comment {
             uuid: String::from("9055dac36045fe36545bed7ae7b49347"),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
-            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-07T15:26:26-06:00")
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T10:08:38-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
-            description: String::from("This is a comment on issue dd79c8cfb8beeacd0460429944b4ecbe95a31561\n\nIt has multiple lines\n"),
+            description: String::from("This is a comment on issue dd79c8cfb8beeacd0460429944b4ecbe\n\nIt has multiple lines\n"),
             dir: std::path::PathBuf::from(comment_dir),
         };
         assert_eq!(comment, expected);
