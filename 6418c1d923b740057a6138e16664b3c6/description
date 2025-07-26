@@ -1,4 +1,4 @@
-add `ent modify ISSUE CHANGE...
+add `ent modify ISSUE CHANGE...`
 
 CHANGE is one or more changes to make to the issue, that looks a bit
 like the FILTER of `ent list`.  Something like:
