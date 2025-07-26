@@ -1,0 +1,7 @@
+add `ent modify ISSUE CHANGE...
+
+CHANGE is one or more changes to make to the issue, that looks a bit
+like the FILTER of `ent list`.  Something like:
+```
+$ ent modify 123abc state=inprogress assignee=seb tag=bug,cli
+```
