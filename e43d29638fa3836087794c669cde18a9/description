@@ -1,0 +1,7 @@
+add a Workflow section to the README
+
+This section will describe the typical workflows that ent does well.
+
+This was one thing i found lacking when investigating alternative issue
+tracking systems before starting ent, and i think doing this well could
+help people start using ent.
