@@ -88,8 +88,8 @@ impl<T: Enterable> Enterable for Entry<T> {
 }
 
 mod test {
-
     use super::*;
+
     impl Enterable for String {
         fn fetch_from_fs(path: &std::path::Path) -> Result<Self, Error> {
             let mut file = std::fs::File::open(&path)?;
@@ -100,6 +100,33 @@ mod test {
         fn store_to_fs(self, path: &std::path::Path) -> Result<(), Error> {
             let mut file = std::fs::File::create(&path)?;
             write!(file, "{}", self)?;
+            Ok(())
+        }
+    }
+
+    impl Enterable for std::collections::HashMap<String, String> {
+        fn fetch_from_fs(path: &std::path::Path) -> Result<Self, Error> {
+            let mut hashmap = Self::new();
+            for direntry in path.read_dir()? {
+                if let Ok(direntry) = direntry {
+                    hashmap.insert(
+                        String::from(direntry.file_name().to_string_lossy()),
+                        std::fs::read_to_string(direntry.path())?,
+                    );
+                }
+            }
+            Ok(hashmap)
+        }
+        fn store_to_fs(self, path: &std::path::Path) -> Result<(), Error> {
+            std::fs::create_dir(&path)?;
+            for (k, v) in &self {
+                let mut file_path = std::path::PathBuf::from(path);
+                file_path.push(k);
+                let mut file = std::fs::File::create(&file_path)?;
+                write!(file, "{}", v)?;
+            }
+
+            // write!(file, "{}", self)?;
             Ok(())
         }
     }
@@ -141,6 +168,27 @@ mod test {
                 .unwrap()
                 .with_timezone(&chrono::Local),
             entry: vec![String::from("string 1"), String::from("string 2")],
+        };
+        entry.clone().store_to_fs(test_path).unwrap();
+
+        let fs_entry = Entry::<Vec<String>>::fetch_from_fs(test_path).unwrap();
+
+        assert_eq!(entry, fs_entry);
+    }
+
+    #[test]
+    fn store_load_hashmap_string_string_entry() {
+        let test_path = std::path::Path::new("./test/entry/0002");
+        let entry = Entry::<std::collections::HashMap<String, String>> {
+            id: String::from("87fa3146b90db61c4ea0de182798a0e5"),
+            author: String::from("test"),
+            creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-22T21:54:42-06:00")
+                .unwrap()
+                .with_timezone(&chrono::Local),
+            entry: std::collections::HashMap::<String, String>::from([(
+                String::from("key 1"),
+                String::from("value1"),
+            )]),
         };
         entry.clone().store_to_fs(test_path).unwrap();
 
