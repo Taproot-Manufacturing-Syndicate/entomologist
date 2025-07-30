@@ -1,0 +1,12 @@
+`git clone; ent list` fails
+
+There's no local entomologist branch:
+```
+$ ent list
+stdout:
+stderr: fatal: invalid reference: entomologist-data
+
+Error: Oops, something went wrong
+```
+
+Running `ent sync` fixes is, but entomologist should be more resilient.
