@@ -1,0 +1,6 @@
+`ent show` should display dependency state somehow
+
+For each dependency, show with a single emoji if it's Done or not.
+
+This should be visually similar to the dependency info we're planning
+to add to `ent list` in ent:4a9118e5e06956e0b0766ace15174297.
