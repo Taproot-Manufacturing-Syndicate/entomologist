@@ -532,7 +532,19 @@ mod tests {
 
     #[test]
     fn test_branch_exists_0() {
-        let r = git_branch_exists("main").unwrap();
+        // FIXME: I'm not super happy with this, for a couple of reasons:
+        //
+        // * A user might have cloned the repo with a different remote
+        //   name than "origin".
+        //
+        // * In Github workflow's "actions/checkout" by default
+        //   only the branch being built gets fetched, which means
+        //   'origin/main' usually doesn't exist.  We fix this by
+        //   setting "actions/checkout" fetch-depth to 0, which means
+        //   fetch everything.
+        //
+        // This works for now but could be better.
+        let r = git_branch_exists("origin/main").unwrap();
         assert_eq!(r, true);
     }
 
