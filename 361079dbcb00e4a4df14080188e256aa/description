@@ -1,0 +1,1 @@
+add a config option to run `ent sync` after every `ent` command that modifies the database
