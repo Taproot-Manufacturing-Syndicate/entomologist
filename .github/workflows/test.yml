@@ -1,0 +1,20 @@
+name: Code Checks
+
+on: [push, pull_request]
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Install stable toolchain
+      run: rustup toolchain install stable --no-self-update --profile minimal
+    - name: Set stable toolchain as default
+      run: rustup default stable && cargo --version
+    - name: Configure git
+      run:  git config --global user.email "you@example.com" && git config --global user.name "Your Name"
+    - name: Run tests
+      run: cargo test
