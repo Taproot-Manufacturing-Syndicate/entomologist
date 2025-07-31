@@ -90,6 +90,8 @@ enum Commands {
     /// Add or remove a Tag to/from an Issue, or list the Tags on an Issue.
     Tag {
         issue_id: String,
+
+        /// Can be "TAG" to add the tag, or "-TAG" to remove the tag, or omit to list the current tags.
         #[arg(allow_hyphen_values = true)]
         tag: Option<String>,
     },
