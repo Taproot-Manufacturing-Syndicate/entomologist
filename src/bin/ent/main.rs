@@ -195,7 +195,7 @@ fn handle_command(
                 for uuid in these_uuids {
                     let issue = issues.issues.get(*uuid).unwrap();
                     let comments = match issue.comments.len() {
-                        0 => String::from("  "),
+                        0 => String::from("   "),
                         n => format!("🗨️ {}", n),
                     };
                     let blocking_dependencies = match &issue.dependencies {
@@ -211,7 +211,10 @@ fn handle_command(
                                     }
                                 }
                             }
-                            format!("⌛{}", count)
+                            match count {
+                                0 => String::from("   "),
+                                _ => format!("⌛{}", count),
+                            }
                         }
                     };
                     let assignee = match &issue.assignee {
