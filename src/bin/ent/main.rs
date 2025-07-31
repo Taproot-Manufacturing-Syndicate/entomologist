@@ -194,7 +194,7 @@ fn handle_command(
                     let issue = issues.issues.get(*uuid).unwrap();
                     let comments = match issue.comments.len() {
                         0 => String::from("  "),
-                        n => format!("🗨️{}", n),
+                        n => format!("🗨️ {}", n),
                     };
                     let blocking_dependencies = match &issue.dependencies {
                         None => String::from("   "),
@@ -331,18 +331,18 @@ fn handle_command(
                 print!("dependencies: ");
                 let mut separator = "";
                 for dep_id in dependencies {
-                    let Some(d) = issues.get_issue(dep_id) else {
-                        continue;
+                    let emoji = match issues.get_issue(dep_id) {
+                        None => "☠️ ",
+                        Some(d) => match d.state {
+                            entomologist::issue::State::New => "⌛",
+                            entomologist::issue::State::Backlog => "⌛",
+                            entomologist::issue::State::Blocked => "⌛",
+                            entomologist::issue::State::InProgress => "⌛",
+                            entomologist::issue::State::Done => "✅",
+                            entomologist::issue::State::WontDo => "❌",
+                        },
                     };
-                    let emoji = match d.state {
-                        entomologist::issue::State::New => "⌛",
-                        entomologist::issue::State::Backlog => "⌛",
-                        entomologist::issue::State::Blocked => "⌛",
-                        entomologist::issue::State::InProgress => "⌛",
-                        entomologist::issue::State::Done => "✅",
-                        entomologist::issue::State::WontDo => "❌",
-                    };
-                    print!("{}{}{}", separator, emoji, dep_id);
+                    print!("{}{} {}", separator, emoji, dep_id);
                     separator = ", "
                 }
                 println!();
