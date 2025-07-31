@@ -193,8 +193,24 @@ fn handle_command(
                 for uuid in these_uuids {
                     let issue = issues.issues.get(*uuid).unwrap();
                     let comments = match issue.comments.len() {
-                        0 => String::from("   "),
-                        n => format!("🗨️ {}", n),
+                        0 => String::from("  "),
+                        n => format!("🗨️{}", n),
+                    };
+                    let blocking_dependencies = match &issue.dependencies {
+                        None => String::from("   "),
+                        Some(dependencies) => {
+                            let mut count: usize = 0;
+                            for dep_id in dependencies {
+                                if let Some(d) = issues.issues.get(dep_id) {
+                                    if d.state != entomologist::issue::State::Done
+                                        && d.state != entomologist::issue::State::WontDo
+                                    {
+                                        count += 1;
+                                    }
+                                }
+                            }
+                            format!("⌛{}", count)
+                        }
                     };
                     let assignee = match &issue.assignee {
                         Some(assignee) => format!(" (👉 {})", assignee),
@@ -219,9 +235,10 @@ fn handle_command(
                         }
                     };
                     println!(
-                        "{}  {}  {}{}{}",
+                        "{}  {} {}  {}{}{}",
                         uuid,
                         comments,
+                        blocking_dependencies,
                         issue.title(),
                         assignee,
                         tags
@@ -311,7 +328,24 @@ fn handle_command(
             }
             println!("state: {:?}", issue.state);
             if let Some(dependencies) = &issue.dependencies {
-                println!("dependencies: {:?}", dependencies);
+                print!("dependencies: ");
+                let mut separator = "";
+                for dep_id in dependencies {
+                    let Some(d) = issues.get_issue(dep_id) else {
+                        continue;
+                    };
+                    let emoji = match d.state {
+                        entomologist::issue::State::New => "⌛",
+                        entomologist::issue::State::Backlog => "⌛",
+                        entomologist::issue::State::Blocked => "⌛",
+                        entomologist::issue::State::InProgress => "⌛",
+                        entomologist::issue::State::Done => "✅",
+                        entomologist::issue::State::WontDo => "❌",
+                    };
+                    print!("{}{}{}", separator, emoji, dep_id);
+                    separator = ", "
+                }
+                println!();
             }
             if let Some(assignee) = &issue.assignee {
                 println!("assignee: {}", assignee);
