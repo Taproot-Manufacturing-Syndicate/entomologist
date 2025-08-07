@@ -48,6 +48,10 @@ pub enum IssueError {
     ChronoParseError(#[from] chrono::format::ParseError),
     #[error("Failed to parse issue")]
     IssueParseError,
+    #[error("invalid escape character {escape:?} in tag file {filename:?}")]
+    TagInvalidEscape { escape: String, filename: String },
+    #[error("invalid trailing escape character ',' in tag file {filename:?}")]
+    TagTrailingEscape { filename: String },
     #[error("Failed to parse state")]
     StateParseError,
     #[error("Failed to run git")]
@@ -137,13 +141,7 @@ impl Issue {
                 } else if file_name == "dependencies" && direntry.metadata()?.is_dir() {
                     dependencies = Self::read_dependencies(&direntry.path())?;
                 } else if file_name == "tags" {
-                    let contents = std::fs::read_to_string(direntry.path())?;
-                    tags = contents
-                        .lines()
-                        .filter(|s| s.len() > 0)
-                        .map(|tag| String::from(tag.trim()))
-                        .collect();
-                    tags.sort();
+                    tags = Self::read_tags(&direntry)?;
                 } else if file_name == "comments" && direntry.metadata()?.is_dir() {
                     Self::read_comments(&mut comments, &direntry.path())?;
                 } else {
@@ -525,12 +523,82 @@ impl Issue {
         Ok(())
     }
 
+    fn read_tags(tags_direntry: &std::fs::DirEntry) -> Result<Vec<String>, IssueError> {
+        if !tags_direntry.metadata()?.is_dir() {
+            eprintln!("issue has old-style tags file");
+            return Err(IssueError::IssueParseError);
+        }
+        let mut tags = Vec::<String>::new();
+        for direntry in tags_direntry.path().read_dir()? {
+            if let Ok(direntry) = direntry {
+                let tag = Issue::tag_from_filename(&direntry.file_name().to_string_lossy())?;
+                tags.push(tag);
+            }
+        }
+        tags.sort();
+        Ok(tags)
+    }
+
+    /// Perform un-escape on a filename to make it into a tag:
+    /// ",0" => ","
+    /// ",1" => "/"
+    fn tag_from_filename(filename: &str) -> Result<String, IssueError> {
+        let mut tag = String::new();
+        let mut token_iter = filename.split(',');
+        let Some(start) = token_iter.next() else {
+            return Err(IssueError::StdIoError(std::io::Error::from(
+                std::io::ErrorKind::NotFound,
+            )));
+        };
+        tag.push_str(start);
+        for token in token_iter {
+            match token.chars().nth(0) {
+                Some('0') => {
+                    tag.push(',');
+                    tag.push_str(&token[1..]);
+                }
+                Some('1') => {
+                    tag.push('/');
+                    tag.push_str(&token[1..]);
+                }
+                Some(bogus) => {
+                    return Err(IssueError::TagInvalidEscape {
+                        escape: String::from(bogus),
+                        filename: String::from(filename),
+                    });
+                }
+                None => {
+                    return Err(IssueError::TagTrailingEscape {
+                        filename: String::from(filename),
+                    });
+                }
+            }
+        }
+        Ok(tag)
+    }
+
+    // Perform escape on a tag to make it into a filename:
+    // "," => ",0"
+    // "/" => ",1"
+    fn tag_to_filename(tag: &str) -> String {
+        let mut filename = tag.replace(",", ",0");
+        filename = filename.replace("/", ",1");
+        return filename;
+    }
+
     fn commit_tags(&self, commit_message: &str) -> Result<(), IssueError> {
-        let mut tags_filename = self.dir.clone();
-        tags_filename.push("tags");
-        let mut tags_file = std::fs::File::create(&tags_filename)?;
+        let mut tags_dir_name = self.dir.clone();
+        tags_dir_name.push("tags");
+        match std::fs::remove_dir_all(&tags_dir_name) {
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
+            Err(e) => return Err(e.into()),
+            Ok(_) => (),
+        }
+        std::fs::create_dir(&tags_dir_name)?;
         for tag in &self.tags {
-            writeln!(tags_file, "{}", tag)?;
+            let mut tag_filename = tags_dir_name.clone();
+            tag_filename.push(Issue::tag_to_filename(tag));
+            std::fs::File::create(&tag_filename)?;
         }
         self.commit(commit_message)?;
         Ok(())
@@ -552,6 +620,100 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     #[test]
+    fn tag_from_filename_0() {
+        assert_eq!(
+            Issue::tag_from_filename("hello").unwrap(),
+            String::from("hello")
+        );
+    }
+
+    #[test]
+    fn tag_from_filename_1() {
+        assert_eq!(
+            Issue::tag_from_filename("hello,0world").unwrap(),
+            String::from("hello,world")
+        );
+    }
+
+    #[test]
+    fn tag_from_filename_2() {
+        assert_eq!(
+            Issue::tag_from_filename("hello,1world").unwrap(),
+            String::from("hello/world")
+        );
+    }
+
+    #[test]
+    fn tag_from_filename_3() {
+        assert_eq!(
+            Issue::tag_from_filename(",0hello,1world,0").unwrap(),
+            String::from(",hello/world,")
+        );
+    }
+
+    #[test]
+    fn tag_from_filename_4() {
+        // std::io::Error does not impl PartialEq :-(
+        let filename = "hello,";
+        match Issue::tag_from_filename(filename) {
+            Ok(tag) => panic!(
+                "tag_from_filename() accepted invalid input {:?} and returned {:?}",
+                filename, tag
+            ),
+            Err(_e) => (),
+        }
+    }
+
+    #[test]
+    fn tag_from_filename_5() {
+        // std::io::Error does not impl PartialEq :-(
+        let filename = "hello,world";
+        match Issue::tag_from_filename(filename) {
+            Ok(tag) => panic!(
+                "tag_from_filename() accepted invalid input {:?} and returned {:?}",
+                filename, tag
+            ),
+            Err(_e) => (),
+        }
+    }
+
+    #[test]
+    fn tag_to_filename_0() {
+        let tag = "hello";
+        assert_eq!(Issue::tag_to_filename(tag), "hello");
+    }
+
+    #[test]
+    fn tag_to_filename_1() {
+        let tag = "hello,";
+        assert_eq!(Issue::tag_to_filename(tag), "hello,0");
+    }
+
+    #[test]
+    fn tag_to_filename_2() {
+        let tag = "/hello";
+        assert_eq!(Issue::tag_to_filename(tag), ",1hello");
+    }
+
+    #[test]
+    fn tag_to_filename_3() {
+        let tag = "hello/bye,boo";
+        assert_eq!(Issue::tag_to_filename(tag), "hello,1bye,0boo");
+    }
+
+    #[test]
+    fn tag_to_filename_4() {
+        let tag = ",,,///,,,";
+        assert_eq!(Issue::tag_to_filename(tag), ",0,0,0,1,1,1,0,0,0");
+    }
+
+    #[test]
+    fn tag_to_filename_5() {
+        let tag = ",0,0,1,1";
+        assert_eq!(Issue::tag_to_filename(tag), ",00,00,01,01");
+    }
+
+    #[test]
     fn read_issue_0() {
         let issue_dir = std::path::Path::new("test/0000/3943fc5c173fdf41c0a22251593cd476/");
         let issue = Issue::new_from_dir(issue_dir).unwrap();
@@ -564,6 +726,11 @@ mod tests {
             done_time: None,
             tags: Vec::<String>::from([
                 String::from("TAG2"),
+                String::from("bird/wing"),
+                String::from("bird/wing/feather"),
+                String::from("deer,antler"),
+                String::from("deer,antler,tassle"),
+                String::from("hop,scotch/shoe"),
                 String::from("i-am-also-a-tag"),
                 String::from("tag1"),
             ]),
