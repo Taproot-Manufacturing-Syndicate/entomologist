@@ -9,4 +9,4 @@ stderr: fatal: invalid reference: entomologist-data
 Error: Oops, something went wrong
 ```
 
-Running `ent sync` fixes is, but entomologist should be more resilient.
+Running `ent sync` fixes it, but entomologist should be more resilient.
