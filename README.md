@@ -4,6 +4,8 @@ backed by git.
 
 # Quick start
 
+`git clone` this repo and `cargo build`.
+
 Entomologist provides a single executable called `ent` which performs
 all interaction with the issues database.  `ent --help` provides terse
 usage info.
@@ -28,7 +30,7 @@ $ ent new
 List issues with `ent list`.  Optionally takes a filter argument that
 controls which issues are shown, see `ent list --help` for details.
 For example, to show only new and backlog issues assigned to me or
-unassigned, run `ent list state=new,backlog:assignee=$(whoami),`.
+unassigned, run `ent list state=new,backlog assignee=$(whoami),`.
 
 Show all details of an issue with `ent show`.
 
