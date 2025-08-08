@@ -1,5 +1,5 @@
-use thiserror::Error;
 use crate::{git::GitError, issues::ReadIssuesError};
+use thiserror::Error;
 
 /// Errors that the DB can emit:
 #[derive(Debug, Error)]
@@ -9,7 +9,6 @@ pub enum Error {
     #[error(transparent)]
     GitError(#[from] GitError),
 }
-
 
 /// The main function looks at the command-line arguments and determines
 /// from there where to get the Issues Database to operate on.
@@ -30,8 +29,6 @@ pub enum IssuesDatabaseSource<'a> {
     Dir(&'a std::path::Path),
     Branch(&'a str),
 }
-
-
 
 /// The IssuesDatabase type is a "fat path".  It holds a PathBuf pointing
 /// at the issues database directory, and optionally a Worktree object
@@ -70,9 +67,7 @@ pub fn make_issues_database(
         }),
         IssuesDatabaseSource::Branch(branch) => {
             let worktree = match access_type {
-                IssuesDatabaseAccess::ReadOnly => {
-                    crate::git::Worktree::new_detached(branch)?
-                }
+                IssuesDatabaseAccess::ReadOnly => crate::git::Worktree::new_detached(branch)?,
                 IssuesDatabaseAccess::ReadWrite => crate::git::Worktree::new(branch)?,
             };
             Ok(IssuesDatabase {
@@ -88,7 +83,5 @@ pub fn read_issues_database(
 ) -> Result<crate::issues::Issues, Error> {
     let issues_database =
         make_issues_database(issues_database_source, IssuesDatabaseAccess::ReadOnly)?;
-    Ok(crate::issues::Issues::new_from_dir(
-        &issues_database.dir,
-    )?)
+    Ok(crate::issues::Issues::new_from_dir(&issues_database.dir)?)
 }
