@@ -346,7 +346,7 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
                 .current_dir(dir)
                 .output()?;
             if result.status.success() && !result.stdout.is_empty() {
-                println!("Changes fetched from remote {}:", remote);
+                println!("Changes fetched from remote {remote}:");
                 println!("{}", &String::from_utf8_lossy(&result.stdout));
                 println!();
             }
@@ -362,7 +362,7 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
                 .current_dir(dir)
                 .output()?;
             if result.status.success() && !result.stdout.is_empty() {
-                println!("Changes to push to remote {}:", remote);
+                println!("Changes to push to remote {remote}:");
                 println!("{}", &String::from_utf8_lossy(&result.stdout));
                 println!();
             }
@@ -376,7 +376,7 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
                 .current_dir(dir)
                 .output()?;
             if result.status.success() && !result.stdout.is_empty() {
-                println!("Changes to push to remote {}:", remote);
+                println!("Changes to push to remote {remote}:");
                 println!("{}", &String::from_utf8_lossy(&result.stdout));
                 println!();
             }
@@ -395,7 +395,7 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
                 .current_dir(dir)
                 .output()?;
             if result.status.success() && !result.stdout.is_empty() {
-                println!("Changes to push to remote {}:", remote);
+                println!("Changes to push to remote {remote}:");
                 println!("{}", &String::from_utf8_lossy(&result.stdout));
                 println!();
             }
@@ -431,10 +431,7 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
         .current_dir(dir)
         .output()?;
     if !result.status.success() {
-        println!(
-            "Sync failed!  Push error!  Help, a human needs to fix the mess in {:?}",
-            branch
-        );
+        println!("Sync failed!  Push error!  Help, a human needs to fix the mess in {branch:?}",);
         println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
         println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);

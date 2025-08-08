@@ -105,7 +105,7 @@ impl Comment {
         }
 
         let rnd: u128 = rand::random();
-        let uuid = format!("{:032x}", rnd);
+        let uuid = format!("{rnd:032x}");
         dir.push(&uuid);
         std::fs::create_dir(&dir)?;
 
@@ -125,7 +125,7 @@ impl Comment {
                 comment.description = String::from(description);
                 let description_filename = comment.description_filename();
                 let mut description_file = std::fs::File::create(&description_filename)?;
-                write!(description_file, "{}", description)?;
+                write!(description_file, "{description}")?;
             }
             None => comment.edit_description_file()?,
         };
