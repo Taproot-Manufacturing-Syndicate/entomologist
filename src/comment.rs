@@ -222,7 +222,9 @@ mod tests {
             creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T10:08:38-06:00")
                 .unwrap()
                 .with_timezone(&chrono::Local),
-            description: String::from("This is a comment on issue dd79c8cfb8beeacd0460429944b4ecbe\n\nIt has multiple lines\n"),
+            description: String::from(
+                "This is a comment on issue dd79c8cfb8beeacd0460429944b4ecbe\n\nIt has multiple lines\n",
+            ),
             dir: std::path::PathBuf::from(comment_dir),
         };
         assert_eq!(comment, expected);
