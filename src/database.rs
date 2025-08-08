@@ -25,6 +25,7 @@ pub enum Error {
 ///
 /// The result of that code populates an IssuesDatabaseSource object,
 /// that gets used later to access the database.
+#[derive(Debug)]
 pub enum IssuesDatabaseSource<'a> {
     Dir(&'a std::path::Path),
     Branch(&'a str),
@@ -51,6 +52,7 @@ pub struct IssuesDatabase {
     pub worktree: Option<crate::git::Worktree>,
 }
 
+#[derive(Debug)]
 pub enum IssuesDatabaseAccess {
     ReadOnly,
     ReadWrite,
