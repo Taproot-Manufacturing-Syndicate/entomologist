@@ -496,8 +496,21 @@ fn create_orphan_branch_at_path(
     worktree_path: &std::path::Path,
 ) -> Result<(), GitError> {
     let worktree_dir = worktree_path.to_string_lossy();
+
+    // Create a worktree at the path, with a detached head.
     let result = std::process::Command::new("git")
-        .args(["worktree", "add", "--orphan", "-b", branch, &worktree_dir])
+        .args(["worktree", "add", &worktree_dir, "HEAD"])
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
+        return Err(GitError::Oops);
+    }
+
+    // Create an empty orphan branch in the worktree.
+    let result = std::process::Command::new("git")
+        .args(["switch", "--orphan", branch])
+        .current_dir(worktree_path)
         .output()?;
     if !result.status.success() {
         println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
