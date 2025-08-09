@@ -44,7 +44,6 @@ pub enum IssuesDatabaseSource<'a> {
 /// the contained/owned Worktree object is dropped, which deletes the
 /// worktree directory from the filesystem and prunes the worktree from
 /// git's worktree list.
-
 pub struct IssuesDatabase {
     pub dir: std::path::PathBuf,
 

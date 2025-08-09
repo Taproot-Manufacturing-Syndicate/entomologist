@@ -30,11 +30,11 @@ impl Drop for Worktree {
             .output();
         match result {
             Err(e) => {
-                println!("failed to run git: {:#?}", e);
+                println!("failed to run git: {e:#?}");
             }
             Ok(result) => {
                 if !result.status.success() {
-                    println!("failed to remove git worktree: {:#?}", result);
+                    println!("failed to remove git worktree: {result:#?}");
                 }
             }
         }
@@ -122,7 +122,7 @@ pub fn git_branch_exists(branch: &str) -> Result<bool, GitError> {
     let result = std::process::Command::new("git")
         .args(["show-ref", "--quiet", branch])
         .output()?;
-    return Ok(result.status.success());
+    Ok(result.status.success())
 }
 
 pub fn worktree_is_dirty(dir: &str) -> Result<bool, GitError> {
@@ -149,7 +149,7 @@ pub fn add(file: &std::path::Path) -> Result<(), GitError> {
         println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
-    return Ok(());
+    Ok(())
 }
 
 pub fn restore_file(file: &std::path::Path) -> Result<(), GitError> {
