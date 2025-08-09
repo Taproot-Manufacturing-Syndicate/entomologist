@@ -67,6 +67,7 @@ pub fn make_issues_database(
             worktree: None,
         }),
         IssuesDatabaseSource::Branch(branch) => {
+            crate::git::ensure_branch_exists(branch)?;
             let worktree = match access_type {
                 IssuesDatabaseAccess::ReadOnly => crate::git::Worktree::new_detached(branch)?,
                 IssuesDatabaseAccess::ReadWrite => crate::git::Worktree::new(branch)?,

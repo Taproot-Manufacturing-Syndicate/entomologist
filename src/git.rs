@@ -125,6 +125,43 @@ pub fn git_branch_exists(branch: &str) -> Result<bool, GitError> {
     Ok(result.status.success())
 }
 
+pub fn ensure_branch_exists(branch: &str) -> Result<(), GitError> {
+    // Check for a local branch with the specified name.
+    if git_branch_exists(&format!("refs/heads/{branch}"))? {
+        return Ok(());
+    }
+
+    // Check for *any* branch with the specified name, even remote.
+    let result = std::process::Command::new("git")
+        .args(["show-ref", branch])
+        .output()?;
+    match result.status.success() {
+        true => {
+            // Some remote has this branch, make a local branch from
+            // the first one found.
+            let output = String::from_utf8_lossy(&result.stdout);
+            let line = output.split('\n').next().ok_or(GitError::Oops)?;
+            let remote_branch = line.split_whitespace().last().ok_or(GitError::Oops)?;
+
+            let result = std::process::Command::new("git")
+                .args(["branch", branch, remote_branch])
+                .output()?;
+            if !result.status.success() {
+                println!("failed to make branch {branch:?} from remote branch {remote_branch:?}");
+                println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+                println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
+                return Err(GitError::Oops);
+            }
+        }
+        false => {
+            // No remote has this branch, make an empty one locally now.
+            create_orphan_branch(branch)?;
+        }
+    }
+
+    Ok(())
+}
+
 pub fn worktree_is_dirty(dir: &str) -> Result<bool, GitError> {
     // `git status --porcelain` prints a terse list of files added or
     // modified (both staged and not), and new untracked files.  So if
@@ -459,8 +496,21 @@ fn create_orphan_branch_at_path(
     worktree_path: &std::path::Path,
 ) -> Result<(), GitError> {
     let worktree_dir = worktree_path.to_string_lossy();
+
+    // Create a worktree at the path, with a detached head.
     let result = std::process::Command::new("git")
-        .args(["worktree", "add", "--orphan", "-b", branch, &worktree_dir])
+        .args(["worktree", "add", &worktree_dir, "HEAD"])
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
+        return Err(GitError::Oops);
+    }
+
+    // Create an empty orphan branch in the worktree.
+    let result = std::process::Command::new("git")
+        .args(["switch", "--orphan", branch])
+        .current_dir(worktree_path)
         .output()?;
     if !result.status.success() {
         println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));

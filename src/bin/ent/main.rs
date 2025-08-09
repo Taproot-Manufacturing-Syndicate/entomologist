@@ -624,12 +624,6 @@ fn main() -> anyhow::Result<()> {
         }
     };
 
-    if let entomologist::database::IssuesDatabaseSource::Branch(branch) = issues_database_source {
-        if !entomologist::git::git_branch_exists(branch)? {
-            entomologist::git::create_orphan_branch(branch)?;
-        }
-    }
-
     handle_command(&args, &issues_database_source)?;
 
     Ok(())
