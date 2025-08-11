@@ -495,8 +495,7 @@ fn handle_command(
                 let Some(issue) = issues.get_mut_issue(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
-                if tag.chars().next().unwrap() == '-' {
-                    let tag = &tag[1..];
+                if let Some(tag) = tag.strip_prefix('-') {
                     issue.remove_tag(tag)?;
                 } else {
                     issue.add_tag(tag)?;
