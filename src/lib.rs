@@ -31,6 +31,12 @@ pub struct Filter<'a> {
     pub end_done_time: Option<chrono::DateTime<chrono::Local>>,
 }
 
+impl<'a> Default for Filter<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> Filter<'a> {
     pub fn new() -> Filter<'a> {
         Self {
@@ -74,7 +80,7 @@ impl<'a> Filter<'a> {
                 self.include_tags.clear();
                 self.exclude_tags.clear();
                 for s in tokens[1].split(",") {
-                    if s.len() == 0 {
+                    if s.is_empty() {
                         return Err(ParseFilterError::ParseError);
                     }
                     if s.chars().nth(0).unwrap() == '-' {
@@ -92,13 +98,13 @@ impl<'a> Filter<'a> {
                 if times.len() > 2 {
                     return Err(ParseFilterError::ParseError);
                 }
-                if times[0].len() != 0 {
+                if !times[0].is_empty() {
                     self.start_done_time = Some(
                         chrono::DateTime::parse_from_rfc3339(times[0])?
                             .with_timezone(&chrono::Local),
                     );
                 }
-                if times[1].len() != 0 {
+                if !times[1].is_empty() {
                     self.end_done_time = Some(
                         chrono::DateTime::parse_from_rfc3339(times[1])?
                             .with_timezone(&chrono::Local),

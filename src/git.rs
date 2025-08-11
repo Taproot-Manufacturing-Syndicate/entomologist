@@ -170,7 +170,7 @@ pub fn worktree_is_dirty(dir: &str) -> Result<bool, GitError> {
         .args(["status", "--porcelain", "--untracked-files=no"])
         .current_dir(dir)
         .output()?;
-    return Ok(result.stdout.len() > 0);
+    Ok(!result.stdout.is_empty())
 }
 
 pub fn add(file: &std::path::Path) -> Result<(), GitError> {
@@ -202,7 +202,7 @@ pub fn restore_file(file: &std::path::Path) -> Result<(), GitError> {
         println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
-    return Ok(());
+    Ok(())
 }
 
 pub fn commit(dir: &std::path::Path, msg: &str) -> Result<(), GitError> {
@@ -311,10 +311,10 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
         println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
-    if result.stdout.len() > 0 {
+    if !result.stdout.is_empty() {
         println!("Changes fetched from remote {}:", remote);
         println!("{}", &String::from_utf8_lossy(&result.stdout));
-        println!("");
+        println!();
     }
 
     // Show what we are about to push to the remote.
@@ -323,7 +323,7 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
             "log",
             "--no-merges",
             "--pretty=format:%an: %s",
-            &format!("{}", branch),
+            branch,
             &format!("^{}/{}", remote, branch),
         ])
         .current_dir(dir)
@@ -337,10 +337,10 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
         println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
         return Err(GitError::Oops);
     }
-    if result.stdout.len() > 0 {
+    if !result.stdout.is_empty() {
         println!("Changes to push to remote {}:", remote);
         println!("{}", &String::from_utf8_lossy(&result.stdout));
-        println!("");
+        println!();
     }
 
     // Merge remote branch into local.

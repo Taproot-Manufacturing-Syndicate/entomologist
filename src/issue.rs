@@ -121,33 +121,31 @@ impl Issue {
         let mut tags = Vec::<String>::new();
         let mut done_time: Option<chrono::DateTime<chrono::Local>> = None;
 
-        for direntry in dir.read_dir()? {
-            if let Ok(direntry) = direntry {
-                let file_name = direntry.file_name();
-                if file_name == "description" {
-                    description = Some(std::fs::read_to_string(direntry.path())?);
-                } else if file_name == "state" {
-                    let state_string = std::fs::read_to_string(direntry.path())?;
-                    state = State::from_str(state_string.trim())?;
-                } else if file_name == "assignee" {
-                    assignee = Some(String::from(
-                        std::fs::read_to_string(direntry.path())?.trim(),
-                    ));
-                } else if file_name == "done_time" {
-                    let raw_done_time = chrono::DateTime::<_>::parse_from_rfc3339(
-                        std::fs::read_to_string(direntry.path())?.trim(),
-                    )?;
-                    done_time = Some(raw_done_time.into());
-                } else if file_name == "dependencies" && direntry.metadata()?.is_dir() {
-                    dependencies = Self::read_dependencies(&direntry.path())?;
-                } else if file_name == "tags" {
-                    tags = Self::read_tags(&direntry)?;
-                } else if file_name == "comments" && direntry.metadata()?.is_dir() {
-                    Self::read_comments(&mut comments, &direntry.path())?;
-                } else {
-                    #[cfg(feature = "log")]
-                    debug!("ignoring unknown file in issue directory: {:?}", file_name);
-                }
+        for direntry in (dir.read_dir()?).flatten() {
+            let file_name = direntry.file_name();
+            if file_name == "description" {
+                description = Some(std::fs::read_to_string(direntry.path())?);
+            } else if file_name == "state" {
+                let state_string = std::fs::read_to_string(direntry.path())?;
+                state = State::from_str(state_string.trim())?;
+            } else if file_name == "assignee" {
+                assignee = Some(String::from(
+                    std::fs::read_to_string(direntry.path())?.trim(),
+                ));
+            } else if file_name == "done_time" {
+                let raw_done_time = chrono::DateTime::<_>::parse_from_rfc3339(
+                    std::fs::read_to_string(direntry.path())?.trim(),
+                )?;
+                done_time = Some(raw_done_time.into());
+            } else if file_name == "dependencies" && direntry.metadata()?.is_dir() {
+                dependencies = Self::read_dependencies(&direntry.path())?;
+            } else if file_name == "tags" {
+                tags = Self::read_tags(&direntry)?;
+            } else if file_name == "comments" && direntry.metadata()?.is_dir() {
+                Self::read_comments(&mut comments, &direntry.path())?;
+            } else {
+                #[cfg(feature = "log")]
+                debug!("ignoring unknown file in issue directory: {:?}", file_name);
             }
         }
 
@@ -173,7 +171,7 @@ impl Issue {
             creation_time,
             done_time,
             tags,
-            state: state,
+            state,
             dependencies,
             assignee,
             description,
@@ -186,11 +184,9 @@ impl Issue {
         comments: &mut Vec<crate::comment::Comment>,
         dir: &std::path::Path,
     ) -> Result<(), IssueError> {
-        for direntry in dir.read_dir()? {
-            if let Ok(direntry) = direntry {
-                let comment = crate::comment::Comment::new_from_dir(&direntry.path())?;
-                comments.push(comment);
-            }
+        for direntry in (dir.read_dir()?).flatten() {
+            let comment = crate::comment::Comment::new_from_dir(&direntry.path())?;
+            comments.push(comment);
         }
         comments.sort_by(|a, b| a.creation_time.cmp(&b.creation_time));
         Ok(())
@@ -198,15 +194,13 @@ impl Issue {
 
     fn read_dependencies(dir: &std::path::Path) -> Result<Option<Vec<IssueHandle>>, IssueError> {
         let mut dependencies: Option<Vec<String>> = None;
-        for direntry in dir.read_dir()? {
-            if let Ok(direntry) = direntry {
-                match &mut dependencies {
-                    Some(deps) => {
-                        deps.push(direntry.file_name().into_string().unwrap());
-                    }
-                    None => {
-                        dependencies = Some(vec![direntry.file_name().into_string().unwrap()]);
-                    }
+        for direntry in (dir.read_dir()?).flatten() {
+            match &mut dependencies {
+                Some(deps) => {
+                    deps.push(direntry.file_name().into_string().unwrap());
+                }
+                None => {
+                    dependencies = Some(vec![direntry.file_name().into_string().unwrap()]);
                 }
             }
         }
@@ -260,7 +254,7 @@ impl Issue {
 
         match description {
             Some(description) => {
-                if description.len() == 0 {
+                if description.is_empty() {
                     return Err(IssueError::EmptyDescription);
                 }
                 issue.description = String::from(description);
@@ -293,7 +287,7 @@ impl Issue {
     }
 
     /// Return the Issue title (first line of the description).
-    pub fn title<'a>(&'a self) -> &'a str {
+    pub fn title(&self) -> &str {
         match self.description.find("\n") {
             Some(index) => &self.description.as_str()[..index],
             None => self.description.as_str(),
@@ -340,7 +334,7 @@ impl Issue {
         done_time_filename.push("done_time");
         let mut done_time_file = std::fs::File::create(&done_time_filename)?;
         write!(done_time_file, "{}", done_time.to_rfc3339())?;
-        self.done_time = Some(done_time.clone());
+        self.done_time = Some(done_time);
         self.commit(&format!(
             "set done-time of issue {} to {}",
             self.dir
@@ -413,7 +407,7 @@ impl Issue {
 
     pub fn has_tag(&self, tag: &str) -> bool {
         let tag_string = String::from(tag);
-        self.tags.iter().position(|x| x == &tag_string).is_some()
+        self.tags.iter().any(|x| x == &tag_string)
     }
 
     pub fn has_any_tag(&self, tags: &std::collections::HashSet<&str>) -> bool {
@@ -422,7 +416,7 @@ impl Issue {
                 return true;
             }
         }
-        return false;
+        false
     }
 
     pub fn add_dependency(&mut self, dep: IssueHandle) -> Result<(), IssueError> {
@@ -500,7 +494,7 @@ impl Issue {
             Err(e) => return Err(e.into()),
         };
         let result = std::process::Command::new(editor)
-            .arg(&description_filename.as_os_str())
+            .arg(description_filename.as_os_str())
             .spawn()?
             .wait_with_output()?;
         if !result.status.success() {
@@ -529,11 +523,9 @@ impl Issue {
             return Err(IssueError::IssueParseError);
         }
         let mut tags = Vec::<String>::new();
-        for direntry in tags_direntry.path().read_dir()? {
-            if let Ok(direntry) = direntry {
-                let tag = Issue::tag_from_filename(&direntry.file_name().to_string_lossy())?;
-                tags.push(tag);
-            }
+        for direntry in (tags_direntry.path().read_dir()?).flatten() {
+            let tag = Issue::tag_from_filename(&direntry.file_name().to_string_lossy())?;
+            tags.push(tag);
         }
         tags.sort();
         Ok(tags)
@@ -583,7 +575,7 @@ impl Issue {
     fn tag_to_filename(tag: &str) -> String {
         let mut filename = tag.replace(",", ",0");
         filename = filename.replace("/", ",1");
-        return filename;
+        filename
     }
 
     fn commit_tags(&self, commit_message: &str) -> Result<(), IssueError> {

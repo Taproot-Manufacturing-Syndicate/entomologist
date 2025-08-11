@@ -23,6 +23,12 @@ pub enum ReadIssuesError {
     TomlDeserializeError(#[from] toml::de::Error),
 }
 
+impl Default for Issues {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Issues {
     pub fn new() -> Self {
         Self {
@@ -53,34 +59,32 @@ impl Issues {
     pub fn new_from_dir(dir: &std::path::Path) -> Result<Self, ReadIssuesError> {
         let mut issues = Self::new();
 
-        for direntry in dir.read_dir()? {
-            if let Ok(direntry) = direntry {
-                if direntry.metadata()?.is_dir() {
-                    match crate::issue::Issue::new_from_dir(direntry.path().as_path()) {
-                        Err(e) => {
-                            eprintln!(
-                                "failed to parse issue {}, skipping",
-                                direntry.file_name().to_string_lossy()
-                            );
-                            eprintln!("ignoring error: {:?}", e);
-                            continue;
-                        }
-                        Ok(issue) => {
-                            issues.add_issue(issue);
-                        }
+        for direntry in (dir.read_dir()?).flatten() {
+            if direntry.metadata()?.is_dir() {
+                match crate::issue::Issue::new_from_dir(direntry.path().as_path()) {
+                    Err(e) => {
+                        eprintln!(
+                            "failed to parse issue {}, skipping",
+                            direntry.file_name().to_string_lossy()
+                        );
+                        eprintln!("ignoring error: {:?}", e);
+                        continue;
                     }
-                } else if direntry.file_name() == "config.toml" {
-                    issues.parse_config(direntry.path().as_path())?;
-                } else {
-                    #[cfg(feature = "log")]
-                    debug!(
-                        "ignoring unknown file in issues directory: {:?}",
-                        direntry.file_name()
-                    );
+                    Ok(issue) => {
+                        issues.add_issue(issue);
+                    }
                 }
+            } else if direntry.file_name() == "config.toml" {
+                issues.parse_config(direntry.path().as_path())?;
+            } else {
+                #[cfg(feature = "log")]
+                debug!(
+                    "ignoring unknown file in issues directory: {:?}",
+                    direntry.file_name()
+                );
             }
         }
-        return Ok(issues);
+        Ok(issues)
     }
 }
 
