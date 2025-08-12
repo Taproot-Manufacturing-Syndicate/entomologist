@@ -1,0 +1,37 @@
+`ent sync` fails if there's no `entomologist-data` on remote
+
+1. I created a new git repo on machine A using `git init`.
+
+2. I some entomologist issues in that repo using `ent new`.
+
+3. `ent sync` fails:
+    ```
+    $ ent sync
+    stdout:
+    stderr: fatal: 'origin' does not appear to be a git repository
+    fatal: Could not read from remote repository.
+
+    Please make sure you have the correct access rights
+    and the repository exists.
+
+    Error: Oops, something went wrong
+    ```
+
+4. I created a new bare repo on machine B with `git init --bare`.
+
+5. I added repo B as a remote in repo A.
+
+6. `ent sync` still fails:
+    ```
+    $ ent sync
+    Sync failed!  'git log' error!  Help, a human needs to fix the mess in "entomologist-data"
+    stdout:
+    stderr: fatal: ambiguous argument 'origin/entomologist-data': unknown revision or path not in the working tree.
+    Use '--' to separate paths from revisions, like this:
+    'git <command> [<revision>...] -- [<file>...]'
+
+    Error: Oops, something went wrong
+    ```
+
+For now the workaround is to `git push` the `entomologist-data` branch
+first.  But this should be fixed.
