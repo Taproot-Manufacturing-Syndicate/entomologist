@@ -132,7 +132,7 @@ fn handle_command(
                 if !filter.include_states.contains(&issue.state) {
                     continue;
                 }
-                if filter.include_assignees.len() > 0 {
+                if !filter.include_assignees.is_empty() {
                     let assignee = match &issue.assignee {
                         Some(assignee) => assignee,
                         None => "",
@@ -142,27 +142,23 @@ fn handle_command(
                     }
                 }
 
-                if filter.include_tags.len() > 0 {
-                    if !issue.has_any_tag(&filter.include_tags) {
-                        continue;
-                    }
+                if !filter.include_tags.is_empty() && !issue.has_any_tag(&filter.include_tags) {
+                    continue;
                 }
-                if filter.exclude_tags.len() > 0 {
-                    if issue.has_any_tag(&filter.exclude_tags) {
-                        continue;
-                    }
+                if !filter.exclude_tags.is_empty() && issue.has_any_tag(&filter.exclude_tags) {
+                    continue;
                 }
 
                 if let Some(issue_done_time) = issue.done_time {
-                    if let Some(start_done_time) = filter.start_done_time {
-                        if start_done_time > issue_done_time {
-                            continue;
-                        }
+                    if let Some(start_done_time) = filter.start_done_time
+                        && start_done_time > issue_done_time
+                    {
+                        continue;
                     }
-                    if let Some(end_done_time) = filter.end_done_time {
-                        if end_done_time < issue_done_time {
-                            continue;
-                        }
+                    if let Some(end_done_time) = filter.end_done_time
+                        && end_done_time < issue_done_time
+                    {
+                        continue;
                     }
                 }
 
@@ -183,7 +179,7 @@ fn handle_command(
                 State::WontDo,
             ] {
                 let these_uuids = uuids_by_state.entry(state.clone()).or_default();
-                if these_uuids.len() == 0 {
+                if these_uuids.is_empty() {
                     continue;
                 }
                 these_uuids.sort_by(|a_id, b_id| {
@@ -203,12 +199,11 @@ fn handle_command(
                         Some(dependencies) => {
                             let mut count: usize = 0;
                             for dep_id in dependencies {
-                                if let Some(d) = issues.issues.get(dep_id) {
-                                    if d.state != entomologist::issue::State::Done
-                                        && d.state != entomologist::issue::State::WontDo
-                                    {
-                                        count += 1;
-                                    }
+                                if let Some(d) = issues.issues.get(dep_id)
+                                    && d.state != entomologist::issue::State::Done
+                                    && d.state != entomologist::issue::State::WontDo
+                                {
+                                    count += 1;
                                 }
                             }
                             match count {
@@ -235,7 +230,7 @@ fn handle_command(
                                 tags.push_str(tag);
                                 separator = ", ";
                             }
-                            tags.push_str("]");
+                            tags.push(']');
                             tags
                         }
                     };
@@ -249,7 +244,7 @@ fn handle_command(
                         tags
                     );
                 }
-                println!("");
+                println!();
             }
         }
 
@@ -318,14 +313,14 @@ fn handle_command(
             };
             println!("issue {}", issue_id);
             println!("author: {}", issue.author);
-            if issue.tags.len() > 0 {
+            if !issue.tags.is_empty() {
                 print!("tags: ");
                 let mut separator = "";
                 for tag in &issue.tags {
                     print!("{}{}", separator, tag);
                     separator = ", ";
                 }
-                println!("");
+                println!();
             }
             println!("creation_time: {}", issue.creation_time);
             if let Some(done_time) = &issue.done_time {
@@ -355,14 +350,14 @@ fn handle_command(
             if let Some(assignee) = &issue.assignee {
                 println!("assignee: {}", assignee);
             }
-            println!("");
+            println!();
             println!("{}", issue.description);
             for comment in &issue.comments {
-                println!("");
+                println!();
                 println!("comment: {}", comment.uuid);
                 println!("author: {}", comment.author);
                 println!("creation_time: {}", comment.creation_time);
-                println!("");
+                println!();
                 println!("{}", comment.description);
             }
         }
@@ -489,7 +484,7 @@ fn handle_command(
         Commands::Tag { issue_id, tag } => match tag {
             Some(tag) => {
                 // Add or remove tag.
-                if tag.len() == 0 {
+                if tag.is_empty() {
                     return Err(anyhow::anyhow!("invalid zero-length tag"));
                 }
                 let issues_database = entomologist::database::make_issues_database(
@@ -500,8 +495,7 @@ fn handle_command(
                 let Some(issue) = issues.get_mut_issue(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
-                if tag.chars().nth(0).unwrap() == '-' {
-                    let tag = &tag[1..];
+                if let Some(tag) = tag.strip_prefix('-') {
                     issue.remove_tag(tag)?;
                 } else {
                     issue.add_tag(tag)?;

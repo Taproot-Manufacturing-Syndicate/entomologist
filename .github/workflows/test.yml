@@ -4,6 +4,19 @@ on: [push, pull_request]
 
 jobs:
 
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Install stable toolchain
+      run: rustup toolchain install stable --no-self-update --profile minimal
+    - name: Set stable toolchain as default
+      run: rustup default stable && cargo --version
+    - name: Run clippy
+      run: cargo clippy
+
   test:
     runs-on: ubuntu-latest
     steps:

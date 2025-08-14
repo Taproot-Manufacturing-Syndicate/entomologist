@@ -34,18 +34,16 @@ impl Comment {
     pub fn new_from_dir(comment_dir: &std::path::Path) -> Result<Self, CommentError> {
         let mut description: Option<String> = None;
 
-        for direntry in comment_dir.read_dir()? {
-            if let Ok(direntry) = direntry {
-                let file_name = direntry.file_name();
-                if file_name == "description" {
-                    description = Some(std::fs::read_to_string(direntry.path())?);
-                } else {
-                    #[cfg(feature = "log")]
-                    debug!(
-                        "ignoring unknown file in comment directory: {:?}",
-                        file_name
-                    );
-                }
+        for direntry in (comment_dir.read_dir()?).flatten() {
+            let file_name = direntry.file_name();
+            if file_name == "description" {
+                description = Some(std::fs::read_to_string(direntry.path())?);
+            } else {
+                #[cfg(feature = "log")]
+                debug!(
+                    "ignoring unknown file in comment directory: {:?}",
+                    file_name
+                );
             }
         }
         let Some(description) = description else {
@@ -95,7 +93,7 @@ impl Comment {
 
         match description {
             Some(description) => {
-                if description.len() == 0 {
+                if description.is_empty() {
                     return Err(CommentError::EmptyDescription);
                 }
                 comment.description = String::from(description);
@@ -138,7 +136,7 @@ impl Comment {
         crate::git::add(&description_filename)?;
         if crate::git::worktree_is_dirty(&self.dir.to_string_lossy())? {
             crate::git::commit(
-                &description_filename
+                description_filename
                     .parent()
                     .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?,
                 &format!(
@@ -174,7 +172,7 @@ impl Comment {
             Err(e) => return Err(e.into()),
         };
         let result = std::process::Command::new(editor)
-            .arg(&description_filename.as_os_str())
+            .arg(description_filename.as_os_str())
             .spawn()?
             .wait_with_output()?;
         if !result.status.success() {
