@@ -113,6 +113,8 @@ impl fmt::Display for State {
 // This is the public API of Issue.
 impl Issue {
     pub fn new_from_dir(dir: &std::path::Path) -> Result<Self, IssueError> {
+        let mut author: Option<String> = None;
+        let mut creation_time: Option<chrono::DateTime<chrono::Local>> = None;
         let mut description: Option<String> = None;
         let mut state = State::New; // default state, if not specified in the issue
         let mut dependencies: Option<Vec<String>> = None;
@@ -123,7 +125,14 @@ impl Issue {
 
         for direntry in (dir.read_dir()?).flatten() {
             let file_name = direntry.file_name();
-            if file_name == "description" {
+            if file_name == "author" {
+                author = Some(std::fs::read_to_string(direntry.path())?);
+            } else if file_name == "creation_time" {
+                let raw_creation_time = chrono::DateTime::<_>::parse_from_rfc3339(
+                    std::fs::read_to_string(direntry.path())?.trim(),
+                )?;
+                creation_time = Some(raw_creation_time.into());
+            } else if file_name == "description" {
                 description = Some(std::fs::read_to_string(direntry.path())?);
             } else if file_name == "state" {
                 let state_string = std::fs::read_to_string(direntry.path())?;
@@ -163,7 +172,21 @@ impl Issue {
             Err(IssueError::IdError)?
         };
 
-        let (author, creation_time) = crate::git::git_log_oldest_author_timestamp(dir)?;
+        if author.is_none() || creation_time.is_none() {
+            let (git_author, git_creation_time) = crate::git::git_log_oldest_author_timestamp(dir)?;
+            if author.is_none() {
+                author = Some(git_author);
+            }
+            if creation_time.is_none() {
+                creation_time = Some(git_creation_time);
+            }
+        }
+        let Some(author) = author else {
+            return Err(IssueError::IssueParseError);
+        };
+        let Some(creation_time) = creation_time else {
+            return Err(IssueError::IssueParseError);
+        };
 
         Ok(Self {
             id,
