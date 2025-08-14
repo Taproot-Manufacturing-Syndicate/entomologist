@@ -15,7 +15,7 @@ set -e
 # This is a commit in the `entomologist-data` branch that we're somewhat
 # arbitrarily using here to time different `ent` operations.
 if [[ -z "$1" ]]; then
-    TEST_COMMIT=a33f1165d77571d770f1a1021afe4c07360247f0
+    TEST_COMMIT=0afce5b554c9c68ed735f5fba64cc02af07b4274
 else
     TEST_COMMIT="$1"
 fi
