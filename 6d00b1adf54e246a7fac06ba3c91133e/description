@@ -2,7 +2,7 @@
 
 1. I created a new git repo on machine A using `git init`.
 
-2. I some entomologist issues in that repo using `ent new`.
+2. I added some entomologist issues in that repo using `ent new`.
 
 3. `ent sync` fails:
     ```
