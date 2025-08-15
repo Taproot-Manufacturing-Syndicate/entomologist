@@ -263,7 +263,7 @@ impl Issue {
 
         let mut issue = Self {
             id: String::from(&issue_id),
-            author: String::from(""),
+            author: crate::git::get_user_name_email(&issue_dir)?,
             creation_time: chrono::Local::now(),
             done_time: None,
             tags: Vec::<String>::new(),
@@ -287,6 +287,14 @@ impl Issue {
             }
             None => issue.edit_description_file()?,
         };
+
+        let author_filename = issue.author_filename();
+        let mut author_file = std::fs::File::create(&author_filename)?;
+        write!(author_file, "{}", &issue.author)?;
+
+        let creation_time_filename = issue.creation_time_filename();
+        let mut creation_time_file = std::fs::File::create(&creation_time_filename)?;
+        write!(creation_time_file, "{}", issue.creation_time.to_rfc3339())?;
 
         issue.commit(&format!("create new issue {}", issue_id))?;
 
@@ -489,6 +497,18 @@ impl Issue {
         let mut description_filename = std::path::PathBuf::from(&self.dir);
         description_filename.push("description");
         description_filename
+    }
+
+    fn author_filename(&self) -> std::path::PathBuf {
+        let mut author_filename = std::path::PathBuf::from(&self.dir);
+        author_filename.push("author");
+        author_filename
+    }
+
+    fn creation_time_filename(&self) -> std::path::PathBuf {
+        let mut creation_time_filename = std::path::PathBuf::from(&self.dir);
+        creation_time_filename.push("creation_time");
+        creation_time_filename
     }
 
     /// Read the Issue's description file into the internal Issue representation.
