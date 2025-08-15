@@ -1,0 +1,20 @@
+`ent new` doesn't work in a brand-new empty repo
+
+1. `git init repo-dir`
+
+2. `cd repo-dir`
+
+3. ent new "a new issue":
+```
+$ ent new
+stdout:
+stderr: fatal: invalid reference: HEAD
+
+Error: Oops, something went wrong
+```
+
+Creating a single valid commit, even an empty one, makes it work:
+
+4. `git commit --allow-empty -m "empty commit"`
+
+5. `ent new "a new issue"`
