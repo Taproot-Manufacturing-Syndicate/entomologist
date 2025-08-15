@@ -264,7 +264,7 @@ pub fn git_commit_file(file: &std::path::Path) -> Result<(), GitError> {
     Ok(())
 }
 
-pub fn git_fetch(dir: &std::path::Path, remote: &str) -> Result<(), GitError> {
+pub fn fetch(dir: &std::path::Path, remote: &str) -> Result<(), GitError> {
     let result = std::process::Command::new("git")
         .args(["fetch", remote])
         .current_dir(dir)
@@ -285,7 +285,7 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
     // 2. `git merge REMOTE/BRANCH`
     // 3. `git push REMOTE BRANCH`
 
-    git_fetch(dir, remote)?;
+    fetch(dir, remote)?;
 
     // FIXME: Possible things to add:
     // * `git log -p` shows diff
