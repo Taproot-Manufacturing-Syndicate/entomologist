@@ -6,6 +6,8 @@ pub enum GitError {
     StdIoError(#[from] std::io::Error),
     #[error(transparent)]
     ParseIntError(#[from] std::num::ParseIntError),
+    #[error("Failed to fetch from remote {remote:?}:\n{error}")]
+    FetchError { remote: String, error: String },
     #[error("Oops, something went wrong")]
     Oops,
 }
@@ -270,9 +272,10 @@ fn fetch(dir: &std::path::Path, remote: &str) -> Result<(), GitError> {
         .current_dir(dir)
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
+        return Err(GitError::FetchError {
+            remote: String::from(remote),
+            error: String::from_utf8_lossy(&result.stderr).into_owned(),
+        });
     }
     Ok(())
 }
