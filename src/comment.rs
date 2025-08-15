@@ -111,7 +111,7 @@ impl Comment {
 
         let mut comment = crate::comment::Comment {
             uuid,
-            author: String::from(""), // this will be updated from git when we re-read this comment
+            author: crate::git::get_user_name_email(&dir)?,
             creation_time: chrono::Local::now(),
             description: String::from(""), // this will be set immediately below
             dir: dir.clone(),
@@ -129,6 +129,14 @@ impl Comment {
             }
             None => comment.edit_description_file()?,
         };
+
+        let author_filename = comment.author_filename();
+        let mut author_file = std::fs::File::create(&author_filename)?;
+        write!(author_file, "{}", &comment.author)?;
+
+        let creation_time_filename = comment.creation_time_filename();
+        let mut creation_time_file = std::fs::File::create(&creation_time_filename)?;
+        write!(creation_time_file, "{}", comment.creation_time.to_rfc3339())?;
 
         crate::git::add(&dir)?;
         if crate::git::worktree_is_dirty(&dir.to_string_lossy())? {
@@ -226,6 +234,18 @@ impl Comment {
         let mut description_filename = std::path::PathBuf::from(&self.dir);
         description_filename.push("description");
         description_filename
+    }
+
+    fn author_filename(&self) -> std::path::PathBuf {
+        let mut author_filename = std::path::PathBuf::from(&self.dir);
+        author_filename.push("author");
+        author_filename
+    }
+
+    fn creation_time_filename(&self) -> std::path::PathBuf {
+        let mut creation_time_filename = std::path::PathBuf::from(&self.dir);
+        creation_time_filename.push("creation_time");
+        creation_time_filename
     }
 }
 
