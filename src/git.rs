@@ -264,7 +264,7 @@ pub fn git_commit_file(file: &std::path::Path) -> Result<(), GitError> {
     Ok(())
 }
 
-pub fn fetch(dir: &std::path::Path, remote: &str) -> Result<(), GitError> {
+fn fetch(dir: &std::path::Path, remote: &str) -> Result<(), GitError> {
     let result = std::process::Command::new("git")
         .args(["fetch", remote])
         .current_dir(dir)
