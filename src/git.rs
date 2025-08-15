@@ -376,62 +376,6 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
     Ok(())
 }
 
-pub fn git_log_oldest_timestamp(
-    path: &std::path::Path,
-) -> Result<chrono::DateTime<chrono::Local>, GitError> {
-    let mut git_dir = std::path::PathBuf::from(path);
-    git_dir.pop();
-    let result = std::process::Command::new("git")
-        .args([
-            "log",
-            "--pretty=format:%at",
-            "--",
-            &path
-                .file_name()
-                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
-                .to_string_lossy(),
-        ])
-        .current_dir(&git_dir)
-        .output()?;
-    if !result.status.success() {
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
-    }
-    let timestamp_str = std::str::from_utf8(&result.stdout).unwrap();
-    let timestamp_last = timestamp_str.split("\n").last().unwrap();
-    let timestamp_i64 = timestamp_last.parse::<i64>()?;
-    let timestamp = chrono::DateTime::from_timestamp(timestamp_i64, 0)
-        .unwrap()
-        .with_timezone(&chrono::Local);
-    Ok(timestamp)
-}
-
-pub fn git_log_oldest_author(path: &std::path::Path) -> Result<String, GitError> {
-    let mut git_dir = std::path::PathBuf::from(path);
-    git_dir.pop();
-    let result = std::process::Command::new("git")
-        .args([
-            "log",
-            "--pretty=format:%an <%ae>",
-            "--",
-            &path
-                .file_name()
-                .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))?
-                .to_string_lossy(),
-        ])
-        .current_dir(&git_dir)
-        .output()?;
-    if !result.status.success() {
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
-    }
-    let author_str = std::str::from_utf8(&result.stdout).unwrap();
-    let author_last = author_str.split("\n").last().unwrap();
-    Ok(String::from(author_last))
-}
-
 pub fn git_log_oldest_author_timestamp(
     path: &std::path::Path,
 ) -> Result<(String, chrono::DateTime<chrono::Local>), GitError> {
