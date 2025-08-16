@@ -21,4 +21,16 @@ fn yes_remote_yes_remote_entomologist_data_no_local_entomologist_data_rw() {
     .unwrap();
 
     let _issues = entomologist::issues::Issues::new_from_dir(&db.dir).unwrap();
+
+    let remote = "origin";
+    let branch = "entomologist-data";
+    match entomologist::git::sync(&db.dir, remote, branch) {
+        Err(e) => {
+            panic!("unexpected sync error: {e:?}");
+        }
+        Ok(_) => {
+            // This should work.
+            ()
+        }
+    }
 }
