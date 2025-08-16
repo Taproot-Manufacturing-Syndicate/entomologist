@@ -1,0 +1,6 @@
+add a tool to perform all these db updates i keep making
+
+The "tags file to tags dir" change and the coming "don't git log, store
+author and ctime as files in the db" change each requires the user to
+run a specific script in the tools directory.  Better to make a single
+tool that incrementally performs all updates needed.
