@@ -1,11 +1,11 @@
 mod common;
 
 #[test]
-/// No `entomologist-data` branch, local or remote.
-fn no_entomologist_data_branch_exists_ro() {
-    let workdir = common::make_test_repo();
-    std::env::set_current_dir(&workdir).unwrap();
-    println!("{workdir:?}");
+/// No remote repo exists.
+/// No local `entomologist-data` branch exists.
+fn no_remote_no_local_entomologist_data_ro() {
+    let repo = common::make_test_repo();
+    std::env::set_current_dir(&repo).unwrap();
 
     let db = entomologist::database::make_issues_database(
         &entomologist::database::IssuesDatabaseSource::Branch("entomologist-data"),

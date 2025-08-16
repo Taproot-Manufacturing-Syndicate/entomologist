@@ -6,6 +6,14 @@ pub enum GitError {
     StdIoError(#[from] std::io::Error),
     #[error(transparent)]
     ParseIntError(#[from] std::num::ParseIntError),
+    #[error("Failed to fetch from remote {remote:?}:\n{error}")]
+    FetchError { remote: String, error: String },
+    #[error("Failed to merge {remote}/{branch} into {branch}:\n{error}")]
+    MergeError {
+        remote: String,
+        branch: String,
+        error: String,
+    },
     #[error("Oops, something went wrong")]
     Oops,
 }
@@ -264,15 +272,16 @@ pub fn git_commit_file(file: &std::path::Path) -> Result<(), GitError> {
     Ok(())
 }
 
-pub fn git_fetch(dir: &std::path::Path, remote: &str) -> Result<(), GitError> {
+fn fetch(dir: &std::path::Path, remote: &str) -> Result<(), GitError> {
     let result = std::process::Command::new("git")
         .args(["fetch", remote])
         .current_dir(dir)
         .output()?;
     if !result.status.success() {
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
+        return Err(GitError::FetchError {
+            remote: String::from(remote),
+            error: String::from_utf8_lossy(&result.stderr).into_owned(),
+        });
     }
     Ok(())
 }
@@ -285,77 +294,107 @@ pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), Git
     // 2. `git merge REMOTE/BRANCH`
     // 3. `git push REMOTE BRANCH`
 
-    git_fetch(dir, remote)?;
+    fetch(dir, remote)?;
 
     // FIXME: Possible things to add:
     // * `git log -p` shows diff
     // * `git log --numstat` shows machine-readable diffstat
 
-    // Show what we just fetched from the remote.
-    let result = std::process::Command::new("git")
-        .args([
-            "log",
-            "--no-merges",
-            "--pretty=format:%an: %s",
-            &format!("{}/{}", remote, branch),
-            &format!("^{}", branch),
-        ])
-        .current_dir(dir)
-        .output()?;
-    if !result.status.success() {
-        println!(
-            "Sync failed!  'git log' error!  Help, a human needs to fix the mess in {:?}",
-            branch
-        );
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
-    }
-    if !result.stdout.is_empty() {
-        println!("Changes fetched from remote {}:", remote);
-        println!("{}", &String::from_utf8_lossy(&result.stdout));
-        println!();
-    }
+    let have_local_branch = git_branch_exists(branch)?;
+    let have_remote_branch = git_branch_exists(&format!("{remote}/{branch}"))?;
 
-    // Show what we are about to push to the remote.
-    let result = std::process::Command::new("git")
-        .args([
-            "log",
-            "--no-merges",
-            "--pretty=format:%an: %s",
-            branch,
-            &format!("^{}/{}", remote, branch),
-        ])
-        .current_dir(dir)
-        .output()?;
-    if !result.status.success() {
-        println!(
-            "Sync failed!  'git log' error!  Help, a human needs to fix the mess in {:?}",
-            branch
-        );
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
-    }
-    if !result.stdout.is_empty() {
-        println!("Changes to push to remote {}:", remote);
-        println!("{}", &String::from_utf8_lossy(&result.stdout));
-        println!();
+    match (have_local_branch, have_remote_branch) {
+        (true, true) => {
+            // Both local and remote branches exist.
+            // Show what we just fetched from the remote.
+            let result = std::process::Command::new("git")
+                .args([
+                    "log",
+                    "--no-merges",
+                    "--pretty=format:%an: %s",
+                    &format!("{remote}/{branch}"),
+                    &format!("^{branch}"),
+                ])
+                .current_dir(dir)
+                .output()?;
+            if result.status.success() && !result.stdout.is_empty() {
+                println!("Changes fetched from remote {}:", remote);
+                println!("{}", &String::from_utf8_lossy(&result.stdout));
+                println!();
+            }
+            // Show what we are about to push to the remote.
+            let result = std::process::Command::new("git")
+                .args([
+                    "log",
+                    "--no-merges",
+                    "--pretty=format:%an: %s",
+                    branch,
+                    &format!("^{remote}/{branch}"),
+                ])
+                .current_dir(dir)
+                .output()?;
+            if result.status.success() && !result.stdout.is_empty() {
+                println!("Changes to push to remote {}:", remote);
+                println!("{}", &String::from_utf8_lossy(&result.stdout));
+                println!();
+            }
+        }
+
+        (true, false) => {
+            // Local branch exists, remote does not.
+            // Show what we are about to push to the remote.
+            let result = std::process::Command::new("git")
+                .args(["log", "--no-merges", "--pretty=format:%an: %s", branch])
+                .current_dir(dir)
+                .output()?;
+            if result.status.success() && !result.stdout.is_empty() {
+                println!("Changes to push to remote {}:", remote);
+                println!("{}", &String::from_utf8_lossy(&result.stdout));
+                println!();
+            }
+        }
+
+        (false, true) => {
+            // Local branch does not exist, remote branch does exist.
+            // Show what we are about to push to the remote.
+            let result = std::process::Command::new("git")
+                .args([
+                    "log",
+                    "--no-merges",
+                    "--pretty=format:%an: %s",
+                    &format!("{remote}/{branch}"),
+                ])
+                .current_dir(dir)
+                .output()?;
+            if result.status.success() && !result.stdout.is_empty() {
+                println!("Changes to push to remote {}:", remote);
+                println!("{}", &String::from_utf8_lossy(&result.stdout));
+                println!();
+            }
+        }
+
+        (false, false) => {
+            // No local branch and no remote branch.  What are we doing here??
+        }
     }
 
     // Merge remote branch into local.
-    let result = std::process::Command::new("git")
-        .args(["merge", &format!("{}/{}", remote, branch)])
-        .current_dir(dir)
-        .output()?;
-    if !result.status.success() {
-        println!(
-            "Sync failed!  Merge error!  Help, a human needs to fix the mess in {:?}",
-            branch
-        );
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
+    if have_remote_branch {
+        let result = std::process::Command::new("git")
+            .args(["merge", &format!("{remote}/{branch}")])
+            .current_dir(dir)
+            .output()?;
+        if !result.status.success() {
+            return Err(GitError::MergeError {
+                remote: String::from(remote),
+                branch: String::from(branch),
+                error: format!(
+                    "Merge error - failed to merge {remote}/{branch} into {branch}!  Help, a human needs to fix the mess in {branch:?}:\n{}{}",
+                    &format!("stdout: {}\n", &String::from_utf8_lossy(&result.stdout)),
+                    &format!("stderr: {}\n", &String::from_utf8_lossy(&result.stderr)),
+                ),
+            });
+        }
     }
 
     // Push merged branch to remote.

@@ -1,10 +1,12 @@
 mod common;
 
 #[test]
-fn local_entomologist_data_branch_exists_ro() {
+/// No remote repo exists.
+/// A local `entomologist-data` branch exists.
+fn no_remote_yes_local_entomologist_data_ro() {
     let repo = common::make_test_repo();
     std::env::set_current_dir(&repo).unwrap();
-    common::make_entomologist_branch(&repo.path());
+    common::make_entomologist_branch();
 
     let db = entomologist::database::make_issues_database(
         &entomologist::database::IssuesDatabaseSource::Branch("entomologist-data"),

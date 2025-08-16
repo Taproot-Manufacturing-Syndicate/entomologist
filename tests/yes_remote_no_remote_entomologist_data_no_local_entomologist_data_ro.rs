@@ -1,11 +1,13 @@
 mod common;
 
 #[test]
-fn remote_entomologist_data_branch_exists_ro() {
-    // Make a temporary repo with an `entomologist-data` branch in it.
+/// No local `entomologist-data` branch exists.
+/// A remote repo exists.
+/// The remote repo does not have an `entomologist-data` branch.
+fn yes_remote_no_remote_entomologist_data_no_local_entomologist_data_ro() {
+    // Make a temporary repo with no `entomologist-data` branch in it.
     let remote_repo = common::make_test_repo();
     std::env::set_current_dir(&remote_repo).unwrap();
-    common::make_entomologist_branch(&remote_repo.path());
 
     // Clone the "remote" repo into another temporary repo.
     let local_repo = common::clone_repo(&remote_repo.path());
