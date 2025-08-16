@@ -286,6 +286,34 @@ fn fetch(dir: &std::path::Path, remote: &str) -> Result<(), GitError> {
     Ok(())
 }
 
+pub fn get_user_name_email(dir: &std::path::Path) -> Result<String, GitError> {
+    let result = std::process::Command::new("git")
+        .args(["config", "user.name"])
+        .current_dir(dir)
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
+        return Err(GitError::Oops);
+    }
+    let user_name_string = String::from_utf8_lossy(&result.stdout);
+    let user_name = user_name_string.lines().next().ok_or(GitError::Oops)?;
+
+    let result = std::process::Command::new("git")
+        .args(["config", "user.email"])
+        .current_dir(dir)
+        .output()?;
+    if !result.status.success() {
+        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
+        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
+        return Err(GitError::Oops);
+    }
+    let user_email_string = String::from_utf8_lossy(&result.stdout);
+    let user_email = user_email_string.lines().next().ok_or(GitError::Oops)?;
+
+    Ok(format!("{user_name} <{user_email}>"))
+}
+
 pub fn sync(dir: &std::path::Path, remote: &str, branch: &str) -> Result<(), GitError> {
     // We do all the work in a directory that's (FIXME) hopefully a
     // worktree.  If anything goes wrong we just fail out and ask the

@@ -18,6 +18,8 @@ pub enum CommentError {
     StdIoError(#[from] std::io::Error),
     #[error(transparent)]
     EnvVarError(#[from] std::env::VarError),
+    #[error(transparent)]
+    ChronoParseError(#[from] chrono::format::ParseError),
     #[error("Failed to parse comment")]
     CommentParseError,
     #[error("Failed to run git")]
@@ -32,11 +34,20 @@ pub enum CommentError {
 
 impl Comment {
     pub fn new_from_dir(comment_dir: &std::path::Path) -> Result<Self, CommentError> {
+        let mut author: Option<String> = None;
+        let mut creation_time: Option<chrono::DateTime<chrono::Local>> = None;
         let mut description: Option<String> = None;
 
         for direntry in (comment_dir.read_dir()?).flatten() {
             let file_name = direntry.file_name();
-            if file_name == "description" {
+            if file_name == "author" {
+                author = Some(std::fs::read_to_string(direntry.path())?);
+            } else if file_name == "creation_time" {
+                let raw_creation_time = chrono::DateTime::<_>::parse_from_rfc3339(
+                    std::fs::read_to_string(direntry.path())?.trim(),
+                )?;
+                creation_time = Some(raw_creation_time.into());
+            } else if file_name == "description" {
                 description = Some(std::fs::read_to_string(direntry.path())?);
             } else {
                 #[cfg(feature = "log")]
@@ -50,7 +61,22 @@ impl Comment {
             return Err(CommentError::CommentParseError);
         };
 
-        let (author, creation_time) = crate::git::git_log_oldest_author_timestamp(comment_dir)?;
+        if author.is_none() || creation_time.is_none() {
+            let (git_author, git_creation_time) =
+                crate::git::git_log_oldest_author_timestamp(comment_dir)?;
+            if author.is_none() {
+                author = Some(git_author);
+            }
+            if creation_time.is_none() {
+                creation_time = Some(git_creation_time);
+            }
+        }
+        let Some(author) = author else {
+            return Err(CommentError::CommentParseError);
+        };
+        let Some(creation_time) = creation_time else {
+            return Err(CommentError::CommentParseError);
+        };
 
         let dir = std::path::PathBuf::from(comment_dir);
 
@@ -85,7 +111,7 @@ impl Comment {
 
         let mut comment = crate::comment::Comment {
             uuid,
-            author: String::from(""), // this will be updated from git when we re-read this comment
+            author: crate::git::get_user_name_email(&dir)?,
             creation_time: chrono::Local::now(),
             description: String::from(""), // this will be set immediately below
             dir: dir.clone(),
@@ -103,6 +129,14 @@ impl Comment {
             }
             None => comment.edit_description_file()?,
         };
+
+        let author_filename = comment.author_filename();
+        let mut author_file = std::fs::File::create(&author_filename)?;
+        write!(author_file, "{}", &comment.author)?;
+
+        let creation_time_filename = comment.creation_time_filename();
+        let mut creation_time_file = std::fs::File::create(&creation_time_filename)?;
+        write!(creation_time_file, "{}", comment.creation_time.to_rfc3339())?;
 
         crate::git::add(&dir)?;
         if crate::git::worktree_is_dirty(&dir.to_string_lossy())? {
@@ -200,6 +234,18 @@ impl Comment {
         let mut description_filename = std::path::PathBuf::from(&self.dir);
         description_filename.push("description");
         description_filename
+    }
+
+    fn author_filename(&self) -> std::path::PathBuf {
+        let mut author_filename = std::path::PathBuf::from(&self.dir);
+        author_filename.push("author");
+        author_filename
+    }
+
+    fn creation_time_filename(&self) -> std::path::PathBuf {
+        let mut creation_time_filename = std::path::PathBuf::from(&self.dir);
+        creation_time_filename.push("creation_time");
+        creation_time_filename
     }
 }
 

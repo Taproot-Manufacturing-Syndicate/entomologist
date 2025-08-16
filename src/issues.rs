@@ -250,8 +250,8 @@ mod tests {
         expected.add_issue(
             crate::issue::Issue {
                 id: uuid,
-                author: String::from("sigil-03 <sigil@glyphs.tech>"),
-                creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:39:20-06:00")
+                author: "A Person <foo@example.org>".to_owned(),
+                creation_time: chrono::DateTime::parse_from_rfc3339("2025-04-01T12:34:56-06:00")
                     .unwrap()
                     .with_timezone(&chrono::Local),
                 done_time: None,
