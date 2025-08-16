@@ -35,21 +35,17 @@ pub fn make_test_repo() -> tempfile::TempDir {
     workdir
 }
 
-/// Create an `entomologist-data` branch.
-/// FIXME: By branching HEAD :-(
+/// Create an `entomologist-data` branch in the repo that we're
+/// currently in.
 #[allow(dead_code)]
-pub fn make_entomologist_branch(git_worktree: &std::path::Path) {
-    let result = std::process::Command::new("git")
-        .args(["branch", "entomologist-data"])
-        .current_dir(git_worktree)
-        .output()
+pub fn make_entomologist_branch() {
+    let db = entomologist::database::make_issues_database(
+        &entomologist::database::IssuesDatabaseSource::Branch("entomologist-data"),
+        entomologist::database::IssuesDatabaseAccess::ReadWrite,
+    )
+    .unwrap();
+    entomologist::issue::Issue::new(&db.dir, &Some(String::from("issue created on remote")))
         .unwrap();
-    if !result.status.success() {
-        println!("failed to git branch in {}", git_worktree.to_string_lossy());
-        println!("stdout:\n{}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr:\n{}", &String::from_utf8_lossy(&result.stderr));
-        panic!();
-    }
 }
 
 #[allow(dead_code)]
