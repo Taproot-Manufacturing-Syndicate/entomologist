@@ -1,0 +1,9 @@
+support older versions of git
+
+git 2.39 (debian bookworm) and 2.47 (debian trixie) both have `git
+worktree add --orphan` which entomologist uses.
+
+But git 2.30 (debian bullseye) and 2.34 (which rustflower uses) don't
+support it, so entomologist doesn't work on those platforms.
+
+git 2.30 supports `git checkout --orphan`, maybe try using that instead?

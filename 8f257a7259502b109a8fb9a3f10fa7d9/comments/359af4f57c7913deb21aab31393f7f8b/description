@@ -1,0 +1,8 @@
+This fails because in a brand-new repo there are no commits, and HEAD
+is not valid.  When entomologist tries to create the `entomologist-data`
+branch, it first creates a new detached worktree from HEAD, which fails.
+
+We could potentially maybe use `git show-ref` (maybe in the form of
+`entomologist::git::git_branch_exists()` to see if HEAD is valid,
+and *if not* then skip the new worktree business and just work in the
+current worktree.

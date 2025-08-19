@@ -1,0 +1,33 @@
+`ent sync` works but `ent list` fails.
+
+`ent sync` and `ent list` both call
+`entomologist::database::make_issues_database()`.
+
+`sync` makes a RW db:
+    Worktree::new()
+    git creates the local branch:
+        $ git worktree add /tmp/foo entomologist-data
+        Preparing worktree (new branch 'entomologist-data')
+        branch 'entomologist-data' set up to track 'origin/entomologist-data'.
+        HEAD is now at 478926a change state of issue 779724be18a248a7f13fb52243b1e779, new -> inprogress
+
+`list` makes a RO db:
+    Worktree::new_detached()
+    git does not create a local branch:
+        $ git worktree add --detach /tmp/foo entomologist-data
+        fatal: invalid reference: entomologist-data
+
+In both cases, ent's `main` tries to create the `entomologist-data`
+branch if it does not exist, but there's a bug in branch detection: it
+uses `git show-ref {branch}`, which matches the filename of any file in
+`.git/refs/`, including `.git/refs/remotes/origin/entomologist-data`.
+
+This check should probably be fixed and moved into `database.rs`.
+The fixed check should do this:
+
+1. If `refs/heads/{branch}` already exists, return success.
+
+2. If `git show-ref` finds *any* matching name, create branch `{branch}`
+   from the first one found.
+
+3. Otherwise create a new empty `entomologist-data` branch.

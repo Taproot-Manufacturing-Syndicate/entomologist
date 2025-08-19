@@ -1,0 +1,7 @@
+comments should know what issue they're part of
+
+I think this means adding a new field to struct Comment with the uuid
+of the parent Issue.
+
+We probably shouldn't store this in the filesystem, we'll populate it
+from the environment at Comment read time.

@@ -1,0 +1,7 @@
+backend db should be robust against relative/absolute paths
+
+I ran in to a situation where (i think) i created a db, chdir'ed, and
+then tried to use the db, and `git::add()` got confused.
+
+Probably `IssuesDatabase` should have an absolute path, and disallow
+relative paths?

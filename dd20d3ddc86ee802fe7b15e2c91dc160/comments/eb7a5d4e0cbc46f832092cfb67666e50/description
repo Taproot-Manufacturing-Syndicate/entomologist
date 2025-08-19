@@ -1,0 +1,5 @@
+I opted for the "escaped files" design, not the "nested directories"
+design, because i think "escaped files" is totally conflict free, while
+"nested dirs" has a git conflict if one user adds the tag `tui` (creating
+the file `ISSUE/tags/tui`) and another adds `tui/v0.1` (creating the
+directory `ISSUE/tags/tui/` and the file `ISSUE/tags/tui/v0.1`).
