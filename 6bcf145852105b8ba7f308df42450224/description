@@ -1,0 +1,5 @@
+streamline workflow around `ent new`
+
+Add `--assignee`, `--tags`, and `--state`.
+
+This is a request from beta testing by Christian.
