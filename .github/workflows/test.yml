@@ -15,7 +15,7 @@ jobs:
     - name: Set stable toolchain as default
       run: rustup default stable && cargo --version
     - name: Run clippy
-      run: cargo clippy
+      run: cargo clippy -- -Dwarnings
 
   test:
     runs-on: ubuntu-latest

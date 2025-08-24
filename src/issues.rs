@@ -67,7 +67,7 @@ impl Issues {
                             "failed to parse issue {}, skipping",
                             direntry.file_name().to_string_lossy()
                         );
-                        eprintln!("ignoring error: {:?}", e);
+                        eprintln!("ignoring error: {e:?}");
                         continue;
                     }
                     Ok(issue) => {

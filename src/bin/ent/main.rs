@@ -187,12 +187,12 @@ fn handle_command(
                     let b = issues.issues.get(*b_id).unwrap();
                     a.creation_time.cmp(&b.creation_time)
                 });
-                println!("{:?}:", state);
+                println!("{state:?}:");
                 for uuid in these_uuids {
                     let issue = issues.issues.get(*uuid).unwrap();
                     let comments = match issue.comments.len() {
                         0 => String::from("   "),
-                        n => format!("🗨️ {}", n),
+                        n => format!("🗨️ {n}"),
                     };
                     let blocking_dependencies = match &issue.dependencies {
                         None => String::from("   "),
@@ -208,12 +208,12 @@ fn handle_command(
                             }
                             match count {
                                 0 => String::from("   "),
-                                _ => format!("⌛{}", count),
+                                _ => format!("⌛{count}"),
                             }
                         }
                     };
                     let assignee = match &issue.assignee {
-                        Some(assignee) => format!(" (👉 {})", assignee),
+                        Some(assignee) => format!(" (👉 {assignee})"),
                         None => String::from(""),
                     };
                     let tags = match &issue.tags.len() {
@@ -311,20 +311,20 @@ fn handle_command(
             let Some(issue) = issues.get_issue(issue_id) else {
                 return Err(anyhow::anyhow!("issue {} not found", issue_id));
             };
-            println!("issue {}", issue_id);
+            println!("issue {issue_id}");
             println!("author: {}", issue.author);
             if !issue.tags.is_empty() {
                 print!("tags: ");
                 let mut separator = "";
                 for tag in &issue.tags {
-                    print!("{}{}", separator, tag);
+                    print!("{separator}{tag}");
                     separator = ", ";
                 }
                 println!();
             }
             println!("creation_time: {}", issue.creation_time);
             if let Some(done_time) = &issue.done_time {
-                println!("done_time: {}", done_time);
+                println!("done_time: {done_time}");
             }
             println!("state: {:?}", issue.state);
             if let Some(dependencies) = &issue.dependencies {
@@ -342,13 +342,13 @@ fn handle_command(
                             entomologist::issue::State::WontDo => "❌",
                         },
                     };
-                    print!("{}{} {}", separator, emoji, dep_id);
+                    print!("{separator}{emoji} {dep_id}");
                     separator = ", "
                 }
                 println!();
             }
             if let Some(assignee) = &issue.assignee {
-                println!("assignee: {}", assignee);
+                println!("assignee: {assignee}");
             }
             println!();
             println!("{}", issue.description);
@@ -376,8 +376,8 @@ fn handle_command(
                     Some(issue) => {
                         let current_state = issue.state.clone();
                         issue.set_state(new_state.clone())?;
-                        println!("issue: {}", issue_id);
-                        println!("state: {} -> {}", current_state, new_state);
+                        println!("issue: {issue_id}");
+                        println!("state: {current_state} -> {new_state}");
                     }
                     None => {
                         return Err(anyhow::anyhow!("issue {} not found", issue_id));
@@ -388,7 +388,7 @@ fn handle_command(
                 let issues = entomologist::database::read_issues_database(issues_database_source)?;
                 match issues.issues.get(issue_id) {
                     Some(issue) => {
-                        println!("issue: {}", issue_id);
+                        println!("issue: {issue_id}");
                         println!("state: {}", issue.state);
                     }
                     None => {
@@ -438,7 +438,7 @@ fn handle_command(
                     entomologist::database::IssuesDatabaseAccess::ReadWrite,
                 )?;
                 entomologist::git::sync(&issues_database.dir, remote, branch)?;
-                println!("synced {:?} with {:?}", branch, remote);
+                println!("synced {branch:?} with {remote:?}");
             } else {
                 return Err(anyhow::anyhow!(
                     "`sync` operates on a branch, don't specify `issues_dir`"
@@ -464,8 +464,8 @@ fn handle_command(
                     None => String::from("None"),
                 };
                 issue.set_assignee(new_assignee)?;
-                println!("issue: {}", issue_id);
-                println!("assignee: {} -> {}", old_assignee, new_assignee);
+                println!("issue: {issue_id}");
+                println!("assignee: {old_assignee} -> {new_assignee}");
             }
             None => {
                 let issues = entomologist::database::read_issues_database(issues_database_source)?;
@@ -476,8 +476,8 @@ fn handle_command(
                     Some(assignee) => assignee.clone(),
                     None => String::from("None"),
                 };
-                println!("issue: {}", issue_id);
-                println!("assignee: {}", old_assignee);
+                println!("issue: {issue_id}");
+                println!("assignee: {old_assignee}");
             }
         },
 
@@ -515,7 +515,7 @@ fn handle_command(
                         // "i-am-also-a-tag"]` and i don't want the
                         // double-quotes around each tag.
                         for tag in &issue.tags {
-                            println!("{}", tag);
+                            println!("{tag}");
                         }
                     }
                 }
@@ -539,7 +539,7 @@ fn handle_command(
                 let done_time = match chrono::DateTime::parse_from_rfc3339(done_time) {
                     Ok(done_time) => done_time.with_timezone(&chrono::Local),
                     Err(e) => {
-                        eprintln!("failed to parse done-time from {}", done_time);
+                        eprintln!("failed to parse done-time from {done_time}");
                         return Err(e.into());
                     }
                 };
@@ -551,7 +551,7 @@ fn handle_command(
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
                 match &issue.done_time {
-                    Some(done_time) => println!("done_time: {}", done_time),
+                    Some(done_time) => println!("done_time: {done_time}"),
                     None => println!("None"),
                 };
             }
@@ -586,7 +586,7 @@ fn handle_command(
                 println!("DEPENDENCIES:");
                 if let Some(list) = &issue.dependencies {
                     for dependency in list {
-                        println!("{}", dependency);
+                        println!("{dependency}");
                     }
                 } else {
                     println!("NONE");

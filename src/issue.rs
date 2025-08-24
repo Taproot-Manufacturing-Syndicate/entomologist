@@ -257,7 +257,7 @@ impl Issue {
     pub fn new(dir: &std::path::Path, description: &Option<String>) -> Result<Self, IssueError> {
         let mut issue_dir = std::path::PathBuf::from(dir);
         let rnd: u128 = rand::random();
-        let issue_id = format!("{:032x}", rnd);
+        let issue_id = format!("{rnd:032x}");
         issue_dir.push(&issue_id);
         std::fs::create_dir(&issue_dir)?;
 
@@ -283,7 +283,7 @@ impl Issue {
                 issue.description = String::from(description);
                 let description_filename = issue.description_filename();
                 let mut description_file = std::fs::File::create(&description_filename)?;
-                write!(description_file, "{}", description)?;
+                write!(description_file, "{description}")?;
             }
             None => issue.edit_description_file()?,
         };
@@ -296,7 +296,7 @@ impl Issue {
         let mut creation_time_file = std::fs::File::create(&creation_time_filename)?;
         write!(creation_time_file, "{}", issue.creation_time.to_rfc3339())?;
 
-        issue.commit(&format!("create new issue {}", issue_id))?;
+        issue.commit(&format!("create new issue {issue_id}"))?;
 
         Ok(issue)
     }
@@ -332,7 +332,7 @@ impl Issue {
         let mut state_filename = std::path::PathBuf::from(&self.dir);
         state_filename.push("state");
         let mut state_file = std::fs::File::create(&state_filename)?;
-        write!(state_file, "{}", new_state)?;
+        write!(state_file, "{new_state}")?;
         self.commit(&format!(
             "change state of issue {}, {} -> {}",
             self.dir
@@ -386,7 +386,7 @@ impl Issue {
         let mut assignee_filename = std::path::PathBuf::from(&self.dir);
         assignee_filename.push("assignee");
         let mut assignee_file = std::fs::File::create(&assignee_filename)?;
-        write!(assignee_file, "{}", new_assignee)?;
+        write!(assignee_file, "{new_assignee}")?;
         self.commit(&format!(
             "change assignee of issue {}, {} -> {}",
             self.dir

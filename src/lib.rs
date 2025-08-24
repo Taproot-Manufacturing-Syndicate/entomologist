@@ -113,7 +113,7 @@ impl<'a> Filter<'a> {
             }
 
             _ => {
-                println!("unknown filter string '{}'", filter_str);
+                println!("unknown filter string {filter_str:?}");
                 return Err(ParseFilterError::ParseError);
             }
         }
