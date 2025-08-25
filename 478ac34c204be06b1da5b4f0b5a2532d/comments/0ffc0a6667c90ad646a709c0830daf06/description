@@ -1,0 +1,7 @@
+Simpler local-only flamegraph generation:
+
+```
+cargo install flamegraph
+echo 0 | sudo tee /proc/sys/kernel/perf_event_paranoid
+CARGO_PROFILE_RELEASE_DEBUG=true cargo flamegraph -- list
+```
