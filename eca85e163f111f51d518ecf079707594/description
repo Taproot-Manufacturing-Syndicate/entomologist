@@ -1,4 +1,4 @@
-empty `entomologist-data` branch can break `sync`
+unrelated `entomologist-data` branches break `sync`
 
 * Create a git repo "Origin" that does not have an `entomologist-data`
   branch.
