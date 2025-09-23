@@ -1,0 +1,17 @@
+empty `entomologist-data` branch can break `sync`
+
+* Create a git repo "Origin" that does not have an `entomologist-data`
+  branch.
+
+* Clone "Origin" into local repo "A" and local repo "B".
+
+* In local repo A, create a local `entomologist-data` branch with an
+  issue in it, e.g. by running `ent new "first issue"`.
+
+* Sync ent in local repo A to origin.
+
+* In local repo B, create a local `entomologist-data` branch with e.g.
+  `ent list` or `ent new "blah"`.
+
+* In local repo B, try to sync with origin. This *fails* because the two
+  `entomologist-data` branches have unrelated histories.
