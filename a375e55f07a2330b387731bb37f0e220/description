@@ -1,0 +1,4 @@
+let user manage issue priorities somehow
+
+The user should be able to indicate the priorities of issues relative
+to each other.  Not sure what the most ergonomic way to do this is.
