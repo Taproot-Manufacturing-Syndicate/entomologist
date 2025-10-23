@@ -60,7 +60,7 @@ enum Commands {
     /// Show the full description of an issue.
     Show { issue_id: String },
 
-    /// Modify the state of an issue
+    /// Modify the state of an issue (New, Backlog, Blocked, InProgress, Done, WontDo).
     State {
         issue_id: String,
         new_state: Option<State>,
