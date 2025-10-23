@@ -2,3 +2,7 @@ let user manage issue priorities somehow
 
 The user should be able to indicate the priorities of issues relative
 to each other.  Not sure what the most ergonomic way to do this is.
+
+The immediate goal is to let the user sort the issues within
+state=InProgress so that more important or more urgent tasks are at
+the top.
