@@ -123,16 +123,28 @@ impl Widget for &CommentsList {
             .iter()
             .map(|comment| CommentEntry::new_from_comment(comment))
             .collect();
+        let mut constraints = vec![Constraint::Fill(1)];
+        let mut comment_constraints = vec![Constraint::Max(20); comment_list.len()];
+        constraints.append(&mut comment_constraints);
         let layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Fill(1); comment_list.len()])
+            .constraints(constraints)
             .split(area);
 
         // COMMENT LIST
-        for i in 0..20 {
-            if i < comment_list.len() && i < layout.len() {
-                comment_list[i].render(layout[i], buf);
+        if comment_list.len() > 0 {
+            for i in 0..20 {
+                if i < comment_list.len() && i + 1 < layout.len() {
+                    comment_list[i].render(layout[i + 1], buf);
+                }
             }
+        } else {
+            let title_text = format!("COMMENTS");
+            let block = Block::bordered().title(title_text);
+            let text = format!("NO COMMENTS");
+            let pg = Paragraph::new(text).centered().block(block);
+
+            pg.render(layout[0], buf);
         }
     }
 }
