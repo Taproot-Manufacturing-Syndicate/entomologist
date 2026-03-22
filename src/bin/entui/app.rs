@@ -1,5 +1,5 @@
+use crate::components::entomologist::{CommentsList, Entry, IssuesList};
 use crate::event::{AppEvent, Event, EventHandler};
-use crate::components::entomologist::IssuesList;
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
@@ -10,7 +10,18 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
-    EntError(#[from] crate::components::entomologist::Error)
+    EntError(#[from] crate::components::entomologist::Error),
+}
+
+/// view states
+#[derive(Debug, Default)]
+pub enum ViewState {
+    #[default]
+    Overview,
+    Issue {
+        issue: Entry,
+        comments: CommentsList,
+    },
 }
 
 /// Application.
@@ -22,6 +33,8 @@ pub struct App {
     pub events: EventHandler,
 
     pub issues_list: IssuesList,
+
+    pub view_state: ViewState,
 }
 
 impl Default for App {
@@ -31,6 +44,7 @@ impl Default for App {
             events: EventHandler::new(),
             // TODO: .unwrap() as laziness
             issues_list: IssuesList::new().unwrap(),
+            view_state: ViewState::default(),
         }
     }
 }
@@ -43,6 +57,7 @@ impl App {
             events: EventHandler::new(),
             // TODO: .unwrap() as laziness
             issues_list: IssuesList::new()?,
+            view_state: ViewState::default(),
         })
     }
 
@@ -67,7 +82,7 @@ impl App {
     /// Handles the key events and updates the state of [`App`].
     pub fn handle_key_events(&mut self, key_event: KeyEvent) -> color_eyre::Result<()> {
         match key_event.code {
-            KeyCode::Esc | KeyCode::Char('q') => self.events.send(AppEvent::Quit),
+            KeyCode::Char('q') => self.events.send(AppEvent::Quit),
             KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.events.send(AppEvent::Quit)
             }
@@ -78,7 +93,14 @@ impl App {
                 self.issues_list.select_previous();
             }
             KeyCode::Enter => {
-                // TODO: view issue here
+                if let Some(issue) = self.issues_list.get_selected() {
+                    if let Ok(comments) = CommentsList::new(issue.clone()) {
+                        self.view_state = ViewState::Issue { issue, comments };
+                    }
+                }
+            }
+            KeyCode::Esc => {
+                self.view_state = ViewState::Overview;
             }
             // Other handlers you could add here.
             _ => {}

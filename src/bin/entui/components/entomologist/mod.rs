@@ -1,9 +1,13 @@
 pub mod ui;
 
 use core::cell::RefCell;
+use entomologist::{
+    comment::Comment,
+    issue::{Issue, IssueHandle, State},
+    issues::Issues,
+};
 use ratatui::widgets::ListState;
 use thiserror::Error;
-use entomologist::{issue::{Issue, IssueHandle, State}, issues::Issues};
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -11,7 +15,8 @@ pub enum Error {
     EntIssuesError(#[from] entomologist::issues::ReadIssuesError),
     #[error(transparent)]
     EntDbError(#[from] entomologist::database::Error),
-
+    #[error("invalid issue")]
+    InvalidIssue,
 }
 
 #[derive(Debug, Clone)]
@@ -35,7 +40,6 @@ impl Entry {
     }
 }
 
-
 #[derive(Debug)]
 pub struct IssuesList {
     issues: Issues,
@@ -46,7 +50,8 @@ pub struct IssuesList {
 
 impl IssuesList {
     pub fn new() -> Result<Self, Error> {
-        let issues_db_source = entomologist::database::IssuesDatabaseSource::Branch("entomologist-data");
+        let issues_db_source =
+            entomologist::database::IssuesDatabaseSource::Branch("entomologist-data");
         let issues = entomologist::database::read_issues_database(&issues_db_source)?;
         Ok(Self {
             issues,
@@ -54,12 +59,43 @@ impl IssuesList {
             selected_issue: RefCell::new(None),
         })
     }
-    
+
     pub fn select_previous(&self) {
         self.list_state.borrow_mut().select_previous();
     }
 
     pub fn select_next(&self) {
         self.list_state.borrow_mut().select_next();
+    }
+
+    pub fn get_selected(&self) -> Option<Entry> {
+        self.selected_issue.borrow().clone()
+    }
+}
+
+#[derive(Debug)]
+pub struct CommentsList {
+    comments: Vec<Comment>,
+    // safety: this is only accessed from the UI thread
+    list_state: RefCell<ListState>,
+    selected_comment: RefCell<Option<Comment>>,
+}
+
+impl CommentsList {
+    pub fn new(entry: Entry) -> Result<Self, Error> {
+        let issues_database_source =
+            entomologist::database::IssuesDatabaseSource::Branch("entomologist-data");
+        let issues = entomologist::database::read_issues_database(&issues_database_source)?;
+
+        if let Some(issue) = issues.get_issue(&entry.id) {
+            let comments = issue.get_comments();
+            Ok(Self {
+                comments,
+                list_state: RefCell::new(ListState::default()),
+                selected_comment: RefCell::new(None),
+            })
+        } else {
+            Err(Error::InvalidIssue)
+        }
     }
 }

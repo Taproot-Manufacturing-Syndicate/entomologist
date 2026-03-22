@@ -1,6 +1,6 @@
 use std::io::{IsTerminal, Write};
 
-#[derive(Debug, ignorable::PartialEq)]
+#[derive(Debug, ignorable::PartialEq, Clone)]
 pub struct Comment {
     pub uuid: String,
     pub author: String,

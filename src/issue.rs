@@ -457,6 +457,10 @@ impl Issue {
         self.commit(&format!("remove dep {} from issue {}", dep, self.id))?;
         Ok(())
     }
+
+    pub fn get_comments(&self) -> Vec<crate::comment::Comment> {
+        self.comments.clone()
+    }
 }
 
 // This is the internal/private API of Issue.
