@@ -9,7 +9,7 @@ use ratatui::{
 
 use entomologist::issue::Issue;
 
-use crate::components::entomologist::{CommentsList, Entry, IssuesList};
+use crate::components::entomologist::{CommentEntry, CommentsList, Entry, IssuesList};
 
 fn generate_list_item<'a>(id: &String, issue: &Issue) -> ListItem<'a> {
     let title = issue.title();
@@ -99,16 +99,40 @@ impl Widget for &IssuesList {
     }
 }
 
+impl Widget for &CommentEntry {
+    fn render(self, area: Rect, buf: &mut Buffer)
+    where
+        Self: Sized,
+    {
+        let title_text = format!("{} - {}", self.author, self.creation_time);
+        let block = Block::bordered().title(title_text);
+        let text = format!("{}", self.description);
+        let pg = Paragraph::new(text).block(block);
+
+        pg.render(area, buf);
+    }
+}
+
 impl Widget for &CommentsList {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
         Self: Sized,
     {
-        let text = "COMMENT LIST";
-        let preview_block = Block::bordered().title("COMMENTS");
-        let pg = Paragraph::new(text)
-            .block(preview_block)
-            .alignment(Alignment::Center);
-        pg.render(area, buf);
+        let comment_list: Vec<CommentEntry> = self
+            .comments
+            .iter()
+            .map(|comment| CommentEntry::new_from_comment(comment))
+            .collect();
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![Constraint::Fill(1); comment_list.len()])
+            .split(area);
+
+        // COMMENT LIST
+        for i in 0..20 {
+            if i < comment_list.len() && i < layout.len() {
+                comment_list[i].render(layout[i], buf);
+            }
+        }
     }
 }

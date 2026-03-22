@@ -73,6 +73,25 @@ impl IssuesList {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct CommentEntry {
+    uuid: String,
+    author: String,
+    creation_time: chrono::DateTime<chrono::Local>,
+    description: String,
+}
+
+impl CommentEntry {
+    pub fn new_from_comment(comment: &Comment) -> Self {
+        CommentEntry {
+            uuid: comment.uuid.clone(),
+            author: comment.author.clone(),
+            creation_time: comment.creation_time,
+            description: comment.description.clone(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct CommentsList {
     comments: Vec<Comment>,
