@@ -45,7 +45,7 @@ impl Widget for &Entry {
             None => format!("{text}\nASSIGNEE: NONE"),
         };
         let text = format!("{text}\n\nDESCRIPTION:\n{}", self.description);
-        let pg = Paragraph::new(text).block(block);
+        let pg = Paragraph::new(text).wrap(Wrap { trim: true }).block(block);
 
         pg.render(area, buf);
     }
