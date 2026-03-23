@@ -12,32 +12,107 @@ pub enum Error {
 }
 
 /// view states
-#[derive(Debug, Default, Clone)]
+#[derive(Debug)]
 pub enum ViewState {
-    #[default]
-    Overview,
+    Overview {
+        issue_list: IssuesList,
+    },
     Issue {
         issue: Entry,
         comments: CommentsList,
     },
 }
 
+impl Default for ViewState {
+    fn default() -> Self {
+        ViewState::Overview {
+            // TODO: unwrap as lazy
+            issue_list: IssuesList::new().unwrap(),
+        }
+    }
+}
+
 impl ViewState {
     pub fn scroll_up(&self) {
         match &self {
+            ViewState::Overview {issue_list} => {
+                issue_list.select_next();
+            }
             ViewState::Issue{comments, ..} => {
                 comments.scroll_up();
             },
-            _ => {}
         }
     }
     pub fn scroll_down(&self) {
         match &self {
+            ViewState::Overview {issue_list} => {
+                issue_list.select_previous();
+            }
             ViewState::Issue{comments, ..} => {
                 comments.scroll_down();
             }
-            _ => {}
         }
+    }
+}
+
+#[derive(Debug)]
+pub enum PopupState {
+    StateSelection
+}
+
+#[derive(Debug)]
+pub struct ViewManager {
+    // TODO: make these not need publicity
+    pub view_state: ViewState,
+    pub popup_state: Option<PopupState>,
+}
+
+impl Default for ViewManager {
+    fn default() -> Self {
+        Self {
+            view_state: ViewState::default(),
+            popup_state: None,
+        }
+    }
+}
+
+impl ViewManager {
+    pub fn scroll_up(&self) {
+        self.view_state.scroll_up();
+    }
+    pub fn scroll_down(&self) {
+        self.view_state.scroll_down();
+    }
+    // TODO: make this not need mutability
+    pub fn escape(&mut self) {
+        if let Some(_) = self.popup_state {            
+            self.popup_state = None;
+        }
+        else {
+            self.view_state = ViewState::default();
+        }
+    }
+
+    pub fn enter(&mut self) {
+        match &self.view_state {    
+            ViewState::Overview {issue_list} => {
+                if let Some(issue) = issue_list.get_selected() {
+                    if let Ok(comments) = CommentsList::new(issue.clone()) {
+                        self.view_state = ViewState::Issue { issue, comments };
+                    }
+                }
+            }
+            ViewState::Issue{comments, ..} => {
+                comments.scroll_down();
+            }
+        }
+    }
+
+    pub fn issue_state_popup_toggle(&mut self) {
+         match &self.popup_state {
+             Some(popup) => self.popup_state = None,
+             None => self.popup_state = Some(PopupState::StateSelection),
+         }
     }
 }
 
@@ -49,9 +124,9 @@ pub struct App {
     /// Event handler.
     pub events: EventHandler,
 
-    pub issues_list: IssuesList,
+    pub view_manager: ViewManager,
 
-    pub view_state: ViewState,
+    // pub view_state: ViewState,
 }
 
 impl Default for App {
@@ -59,9 +134,7 @@ impl Default for App {
         Self {
             running: true,
             events: EventHandler::new(),
-            // TODO: .unwrap() as laziness
-            issues_list: IssuesList::new().unwrap(),
-            view_state: ViewState::default(),
+            view_manager: ViewManager::default(),
         }
     }
 }
@@ -73,8 +146,7 @@ impl App {
             running: true,
             events: EventHandler::new(),
             // TODO: .unwrap() as laziness
-            issues_list: IssuesList::new()?,
-            view_state: ViewState::default(),
+            view_manager: ViewManager::default(),
         })
     }
 
@@ -104,36 +176,21 @@ impl App {
                 self.events.send(AppEvent::Quit)
             }
             KeyCode::Down | KeyCode::Char('j') => {
-                // up
-                match self.view_state {
-                    ViewState::Overview => {
-                        self.issues_list.select_next();
-                    },
-                    _ => {
-                        self.view_state.scroll_up();
-                    }
-                }
+                self.view_manager.scroll_up();
             }
             KeyCode::Up | KeyCode::Char('k') => {
-                match self.view_state {
-                    ViewState::Overview => {
-                        self.issues_list.select_previous();
-                    },
-                    _ => {
-                        self.view_state.scroll_down();
-                    }
-                }
-                // down
+                self.view_manager.scroll_down();
             }
             KeyCode::Enter => {
-                if let Some(issue) = self.issues_list.get_selected() {
-                    if let Ok(comments) = CommentsList::new(issue.clone()) {
-                        self.view_state = ViewState::Issue { issue, comments };
-                    }
-                }
+                self.view_manager.enter();
             }
             KeyCode::Esc => {
-                self.view_state = ViewState::Overview;
+                self.view_manager.escape();
+            }
+            KeyCode::Char('s') => {
+                self.view_manager.issue_state_popup_toggle();
+                // set the state of an issue
+                
             }
             // Other handlers you could add here.
             _ => {}
