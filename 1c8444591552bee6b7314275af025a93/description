@@ -6,3 +6,9 @@ which means to git it's a regular branch, it shows up in `git branch -a`,
 
 Move the db to `.git/refs/entomologist-data`, it still works the same
 way but isn't treated by git as a normal branch.
+
+The transition will be pretty seamless from ent's perspective, but a
+bit of a pain in the ass to implement:
+- `ent sync` with all remotes.
+- Rename the local ref from `refs/heads/entomologist-data` to `refs/entomologist-data`.
+- Push the new ref name to all remotes, while removing the old ref from the remotes.
