@@ -2,10 +2,10 @@
 use log::debug;
 
 // Just a placeholder for now, get rid of this if we don't need it.
-#[derive(Debug, PartialEq, serde::Deserialize)]
+#[derive(Debug, Default, PartialEq, serde::Deserialize)]
 pub struct Config {}
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Issues {
     pub issues: std::collections::HashMap<String, crate::issue::Issue>,
     pub config: Config,
@@ -23,18 +23,9 @@ pub enum ReadIssuesError {
     TomlDeserializeError(#[from] toml::de::Error),
 }
 
-impl Default for Issues {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Issues {
     pub fn new() -> Self {
-        Self {
-            issues: std::collections::HashMap::new(),
-            config: Config {},
-        }
+        Self::default()
     }
 
     pub fn add_issue(&mut self, issue: crate::issue::Issue) {
