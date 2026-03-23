@@ -1,0 +1,8 @@
+make `entomologist-data` not a branch
+
+Currently we store the ent db in `.git/refs/heads/entomologist-data`,
+which means to git it's a regular branch, it shows up in `git branch -a`,
+`git log --branches`, etc. This is rarely useful.
+
+Move the db to `.git/refs/entomologist-data`, it still works the same
+way but isn't treated by git as a normal branch.
