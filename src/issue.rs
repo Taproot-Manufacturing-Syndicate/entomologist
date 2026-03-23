@@ -18,7 +18,7 @@ pub enum State {
 
 pub type IssueHandle = String;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, ignorable::PartialEq)]
 pub struct Issue {
     pub id: String,
     pub author: String,
@@ -31,6 +31,7 @@ pub struct Issue {
     pub description: String,
     pub comments: Vec<crate::comment::Comment>,
 
+    #[ignored(PartialEq)]
     /// This is the directory that the issue lives in.  Only used
     /// internally by the entomologist library.
     pub dir: std::path::PathBuf,
@@ -747,10 +748,14 @@ mod tests {
 
     #[test]
     fn read_issue_0() {
-        let issue_dir = std::path::Path::new("test/0000/3943fc5c173fdf41c0a22251593cd476/");
-        let issue = Issue::new_from_dir(issue_dir).unwrap();
+        // This has to be an IssuesMut because we want a long-lived worktree to read Issue from.
+        let issues_mut = crate::IssuesMut::new_from_git("entomologist-data-test-0000").unwrap();
+        let mut issue_dir = std::path::PathBuf::from(issues_mut.path());
+        let uuid = "3943fc5c173fdf41c0a22251593cd476";
+        issue_dir.push(&uuid);
+        let issue = Issue::new_from_dir(&issue_dir).unwrap();
         let expected = Issue {
-            id: String::from("3943fc5c173fdf41c0a22251593cd476"),
+            id: String::from(uuid),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
             creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:36:25-06:00")
                 .unwrap()
@@ -780,8 +785,13 @@ mod tests {
 
     #[test]
     fn read_issue_1() {
-        let issue_dir = std::path::Path::new("test/0000/7792b063eef6d33e7da5dc1856750c14/");
-        let issue = Issue::new_from_dir(issue_dir).unwrap();
+        // This has to be an IssuesMut because we want a long-lived worktree to read Issue from.
+        let issues_mut = crate::IssuesMut::new_from_git("entomologist-data-test-0000").unwrap();
+        let mut issue_dir = std::path::PathBuf::from(issues_mut.path());
+        let uuid = "7792b063eef6d33e7da5dc1856750c14";
+        issue_dir.push(&uuid);
+
+        let issue = Issue::new_from_dir(&issue_dir).unwrap();
         let expected = Issue {
             id: String::from("7792b063eef6d33e7da5dc1856750c14"),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),

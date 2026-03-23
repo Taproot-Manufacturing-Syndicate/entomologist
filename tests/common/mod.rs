@@ -39,13 +39,12 @@ pub fn make_test_repo() -> tempfile::TempDir {
 /// currently in.
 #[allow(dead_code)]
 pub fn make_entomologist_branch() {
-    let db = entomologist::database::make_issues_database(
-        &entomologist::database::IssuesDatabaseSource::Branch("entomologist-data"),
-        entomologist::database::IssuesDatabaseAccess::ReadWrite,
+    let issues = entomologist::IssuesMut::new_from_git("entomologist-data").unwrap();
+    entomologist::issue::Issue::new(
+        &issues.path(),
+        &Some(String::from("issue created on remote")),
     )
     .unwrap();
-    entomologist::issue::Issue::new(&db.dir, &Some(String::from("issue created on remote")))
-        .unwrap();
 }
 
 #[allow(dead_code)]

@@ -7,13 +7,9 @@ use simple_logger;
 #[derive(Debug, clap::Parser)]
 #[command(version, about, long_about = None)]
 struct Args {
-    /// Directory containing issues.
-    #[arg(short = 'd', long)]
-    issues_dir: Option<String>,
-
     /// Branch containing issues.
-    #[arg(short = 'b', long)]
-    issues_branch: Option<String>,
+    #[arg(short = 'b', long, default_value_t = String::from("entomologist-data"))]
+    issues_branch: String,
 
     /// Type of behavior/output.
     #[command(subcommand)]
@@ -111,11 +107,11 @@ enum Commands {
 
 fn handle_command(
     args: &Args,
-    issues_database_source: &entomologist::database::IssuesDatabaseSource,
+    git_ref: &str,
 ) -> anyhow::Result<()> {
     match &args.command {
         Commands::List { filter } => {
-            let issues = entomologist::database::read_issues_database(issues_database_source)?;
+            let issues = entomologist::Issues::new_from_git(git_ref)?;
             let filter = {
                 let mut f = entomologist::Filter::new();
                 for filter_str in filter {
@@ -249,11 +245,8 @@ fn handle_command(
         }
 
         Commands::New { description } => {
-            let issues_database = entomologist::database::make_issues_database(
-                issues_database_source,
-                entomologist::database::IssuesDatabaseAccess::ReadWrite,
-            )?;
-            match entomologist::issue::Issue::new(&issues_database.dir, description) {
+            let issues = entomologist::IssuesMut::new_from_git(git_ref)?;
+            match entomologist::issue::Issue::new(&issues.path(), description) {
                 Err(entomologist::issue::IssueError::EmptyDescription) => {
                     println!("no new issue created");
                     return Ok(());
@@ -270,11 +263,7 @@ fn handle_command(
         }
 
         Commands::Edit { uuid } => {
-            let issues_database = entomologist::database::make_issues_database(
-                issues_database_source,
-                entomologist::database::IssuesDatabaseAccess::ReadWrite,
-            )?;
-            let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+            let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
             if let Some(issue) = issues.get_mut_issue(uuid) {
                 match issue.edit_description() {
                     Err(entomologist::issue::IssueError::EmptyDescription) => {
@@ -286,7 +275,7 @@ fn handle_command(
                 }
             }
             // No issue by that ID, check all the comments.
-            for (_, issue) in issues.issues.iter_mut() {
+            for (_, issue) in issues.iter_mut() {
                 for comment in issue.comments.iter_mut() {
                     if comment.uuid == *uuid {
                         match comment.edit_description() {
@@ -307,7 +296,7 @@ fn handle_command(
         }
 
         Commands::Show { issue_id } => {
-            let issues = entomologist::database::read_issues_database(issues_database_source)?;
+            let issues = entomologist::Issues::new_from_git(git_ref)?;
             let Some(issue) = issues.get_issue(issue_id) else {
                 return Err(anyhow::anyhow!("issue {} not found", issue_id));
             };
@@ -367,12 +356,8 @@ fn handle_command(
             new_state,
         } => match new_state {
             Some(new_state) => {
-                let issues_database = entomologist::database::make_issues_database(
-                    issues_database_source,
-                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
-                )?;
-                let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
-                match issues.issues.get_mut(issue_id) {
+                let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
+                match issues.get_mut_issue(issue_id) {
                     Some(issue) => {
                         let current_state = issue.state.clone();
                         issue.set_state(new_state.clone())?;
@@ -385,7 +370,7 @@ fn handle_command(
                 }
             }
             None => {
-                let issues = entomologist::database::read_issues_database(issues_database_source)?;
+                let issues = entomologist::Issues::new_from_git(git_ref)?;
                 match issues.issues.get(issue_id) {
                     Some(issue) => {
                         println!("issue: {issue_id}");
@@ -402,11 +387,7 @@ fn handle_command(
             issue_id,
             description,
         } => {
-            let issues_database = entomologist::database::make_issues_database(
-                issues_database_source,
-                entomologist::database::IssuesDatabaseAccess::ReadWrite,
-            )?;
-            let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+            let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
             let Some(issue) = issues.get_mut_issue(issue_id) else {
                 return Err(anyhow::anyhow!("issue {} not found", issue_id));
             };
@@ -430,20 +411,9 @@ fn handle_command(
         }
 
         Commands::Sync { remote } => {
-            if let entomologist::database::IssuesDatabaseSource::Branch(branch) =
-                issues_database_source
-            {
-                let issues_database = entomologist::database::make_issues_database(
-                    issues_database_source,
-                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
-                )?;
-                entomologist::git::sync(&issues_database.dir, remote, branch)?;
-                println!("synced {branch:?} with {remote:?}");
-            } else {
-                return Err(anyhow::anyhow!(
-                    "`sync` operates on a branch, don't specify `issues_dir`"
-                ));
-            }
+            let issues = entomologist::IssuesMut::new_from_git(git_ref)?;
+            entomologist::git::sync(&issues.path(), remote, git_ref)?;
+            println!("synced {git_ref:?} with {remote:?}");
         }
 
         Commands::Assign {
@@ -451,11 +421,7 @@ fn handle_command(
             new_assignee,
         } => match new_assignee {
             Some(new_assignee) => {
-                let issues_database = entomologist::database::make_issues_database(
-                    issues_database_source,
-                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
-                )?;
-                let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+                let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
                 let Some(issue) = issues.get_mut_issue(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
@@ -468,7 +434,7 @@ fn handle_command(
                 println!("assignee: {old_assignee} -> {new_assignee}");
             }
             None => {
-                let issues = entomologist::database::read_issues_database(issues_database_source)?;
+                let issues = entomologist::Issues::new_from_git(git_ref)?;
                 let Some(original_issue) = issues.issues.get(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
@@ -487,11 +453,7 @@ fn handle_command(
                 if tag.is_empty() {
                     return Err(anyhow::anyhow!("invalid zero-length tag"));
                 }
-                let issues_database = entomologist::database::make_issues_database(
-                    issues_database_source,
-                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
-                )?;
-                let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+                let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
                 let Some(issue) = issues.get_mut_issue(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
@@ -503,7 +465,7 @@ fn handle_command(
             }
             None => {
                 // Just list the tags.
-                let issues = entomologist::database::read_issues_database(issues_database_source)?;
+                let issues = entomologist::Issues::new_from_git(git_ref)?;
                 let Some(issue) = issues.issues.get(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
@@ -528,11 +490,7 @@ fn handle_command(
         } => match done_time {
             Some(done_time) => {
                 // Add or remove tag.
-                let issues_database = entomologist::database::make_issues_database(
-                    issues_database_source,
-                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
-                )?;
-                let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+                let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
                 let Some(issue) = issues.get_mut_issue(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
@@ -546,7 +504,7 @@ fn handle_command(
                 issue.set_done_time(done_time)?;
             }
             None => {
-                let issues = entomologist::database::read_issues_database(issues_database_source)?;
+                let issues = entomologist::Issues::new_from_git(git_ref)?;
                 let Some(issue) = issues.issues.get(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
@@ -562,13 +520,9 @@ fn handle_command(
             dependency_id,
         } => match dependency_id {
             Some(dep_id) => {
-                let ent_db = entomologist::database::make_issues_database(
-                    issues_database_source,
-                    entomologist::database::IssuesDatabaseAccess::ReadWrite,
-                )?;
-                let mut issues = entomologist::issues::Issues::new_from_dir(&ent_db.dir)?;
-                if issues.issues.contains_key(dep_id) {
-                    if let Some(issue) = issues.issues.get_mut(issue_id) {
+                let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
+                if let Some(_dep_issue) = issues.get_issue(dep_id) {
+                    if let Some(issue) = issues.get_mut_issue(issue_id) {
                         issue.add_dependency(dep_id.clone())?;
                     } else {
                         Err(anyhow::anyhow!("issue {} not found", issue_id))?;
@@ -578,9 +532,8 @@ fn handle_command(
                 };
             }
             None => {
-                let ent_db = entomologist::database::read_issues_database(issues_database_source)?;
-
-                let Some(issue) = ent_db.issues.get(issue_id) else {
+                let issues = entomologist::Issues::new_from_git(git_ref)?;
+                let Some(issue) = issues.issues.get(issue_id) else {
                     Err(anyhow::anyhow!("issue {} not found", issue_id))?
                 };
                 println!("DEPENDENCIES:");
@@ -605,20 +558,7 @@ fn main() -> anyhow::Result<()> {
     let args: Args = Args::parse();
     // println!("{:?}", args);
 
-    let issues_database_source = match (&args.issues_dir, &args.issues_branch) {
-        (Some(dir), None) => {
-            entomologist::database::IssuesDatabaseSource::Dir(std::path::Path::new(dir))
-        }
-        (None, Some(branch)) => entomologist::database::IssuesDatabaseSource::Branch(branch),
-        (None, None) => entomologist::database::IssuesDatabaseSource::Branch("entomologist-data"),
-        (Some(_), Some(_)) => {
-            return Err(anyhow::anyhow!(
-                "don't specify both `--issues-dir` and `--issues-branch`"
-            ));
-        }
-    };
-
-    handle_command(&args, &issues_database_source)?;
+    handle_command(&args, &args.issues_branch)?;
 
     Ok(())
 }

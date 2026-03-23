@@ -1,12 +1,13 @@
 use std::io::{IsTerminal, Write};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, ignorable::PartialEq)]
 pub struct Comment {
     pub uuid: String,
     pub author: String,
     pub creation_time: chrono::DateTime<chrono::Local>,
     pub description: String,
 
+    #[ignored(PartialEq)]
     /// This is the directory that the comment lives in.  Only used
     /// internally by the entomologist library.
     pub dir: std::path::PathBuf,
@@ -256,12 +257,15 @@ mod tests {
 
     #[test]
     fn read_comment_0() {
-        let comment_dir = std::path::Path::new(
-            "test/0001/dd79c8cfb8beeacd0460429944b4ecbe/comments/9055dac36045fe36545bed7ae7b49347",
-        );
-        let comment = Comment::new_from_dir(comment_dir).unwrap();
+        let issue_uuid = "dd79c8cfb8beeacd0460429944b4ecbe";
+        let comment_uuid = "9055dac36045fe36545bed7ae7b49347";
+
+        let issues = crate::Issues::new_from_git("entomologist-data-test-0001").unwrap();
+        let issue = issues.get_issue(issue_uuid).unwrap();
+        let comment = issue.get_comment(comment_uuid).unwrap();
+
         let expected = Comment {
-            uuid: String::from("9055dac36045fe36545bed7ae7b49347"),
+            uuid: String::from(comment_uuid),
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
             creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T10:08:38-06:00")
                 .unwrap()
@@ -269,8 +273,9 @@ mod tests {
             description: String::from(
                 "This is a comment on issue dd79c8cfb8beeacd0460429944b4ecbe\n\nIt has multiple lines\n",
             ),
-            dir: std::path::PathBuf::from(comment_dir),
+            dir: std::path::PathBuf::from("ignored"),
         };
-        assert_eq!(comment, expected);
+
+        assert_eq!(comment, &expected);
     }
 }

@@ -14,14 +14,12 @@ fn yes_remote_yes_remote_entomologist_data_yes_local_entomologist_data_ro() {
     let local_repo = common::clone_repo(&remote_repo.path());
     std::env::set_current_dir(&local_repo).unwrap();
 
-    let db = entomologist::database::make_issues_database(
-        &entomologist::database::IssuesDatabaseSource::Branch("entomologist-data"),
-        entomologist::database::IssuesDatabaseAccess::ReadOnly,
+    // Make an issue in the "local" repo.
+    entomologist::issue::Issue::new(
+        &local_repo.path(),
+        &Some(String::from("issue created locally")),
     )
     .unwrap();
 
-    // Make a local issue.
-    entomologist::issue::Issue::new(&db.dir, &Some(String::from("issue created locally"))).unwrap();
-
-    let _issues = entomologist::issues::Issues::new_from_dir(&db.dir).unwrap();
+    let _issues = entomologist::Issues::new_from_git("entomologist-data").unwrap();
 }

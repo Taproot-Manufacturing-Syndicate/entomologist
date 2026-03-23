@@ -1,12 +1,18 @@
 use std::str::FromStr;
 
+pub mod gitdb;
+
 pub mod comment;
-pub mod database;
 pub mod git;
 pub mod issue;
 pub mod issues;
+pub mod issues_mut;
 
 use crate::issue::State;
+
+pub use crate::issue::Issue;
+pub use crate::issues::Issues;
+pub use crate::issues_mut::IssuesMut;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ParseFilterError {
