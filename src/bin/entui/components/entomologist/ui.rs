@@ -149,3 +149,8 @@ impl WidgetRef for CommentsList {
         StatefulWidget::render(list_v, area, buf, state);
     }
 }
+
+// TODO:
+// sort comments list in reverse order, or set scroll to bottom
+// filter out issues that are done / break other issues up better
+// allow scrolling through comments / issue text
