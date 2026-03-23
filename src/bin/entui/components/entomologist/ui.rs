@@ -3,7 +3,8 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
     widgets::{
-        Block, List, ListDirection, ListItem, Paragraph, StatefulWidget, Widget, WidgetRef, Wrap,
+        Block, List, ListDirection, ListItem, Paragraph, Scrollbar, ScrollbarOrientation,
+        StatefulWidget, Widget, WidgetRef, Wrap,
     },
 };
 
@@ -146,8 +147,13 @@ impl WidgetRef for CommentsList {
             (item, main_axis_size)
         });
 
-        // let item_count = 2;
-        let list_v = ListView::new(builder, self.comments.len());
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("┐"))
+            .end_symbol(Some("┘"));
+        // let list = ListView::new(builder, 50)
+        //     .block(Block::default().borders(Borders::ALL))
+
+        let list_v = ListView::new(builder, self.comments.len()).scrollbar(scrollbar);
         // let state = self.list_state.borrow_mut();
 
         let state = &mut *self.list_state.borrow_mut();

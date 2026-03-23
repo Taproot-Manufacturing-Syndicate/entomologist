@@ -121,4 +121,12 @@ impl CommentsList {
             Err(Error::InvalidIssue)
         }
     }
+
+    pub fn scroll_down(&self) {
+        self.list_state.borrow_mut().previous();
+    }
+
+    pub fn scroll_up(&self) {
+        self.list_state.borrow_mut().next();
+    }
 }

@@ -22,6 +22,25 @@ pub enum ViewState {
     },
 }
 
+impl ViewState {
+    pub fn scroll_up(&self) {
+        match &self {
+            ViewState::Issue{comments, ..} => {
+                comments.scroll_up();
+            }
+            _ => {}
+        }
+    }
+    pub fn scroll_down(&self) {
+        match &self {
+            ViewState::Issue{comments, ..} => {
+                comments.scroll_down();
+            }
+            _ => {}
+        }
+    }
+}
+
 /// Application.
 #[derive(Debug)]
 pub struct App {
@@ -89,6 +108,14 @@ impl App {
             }
             KeyCode::Up => {
                 self.issues_list.select_previous();
+            }
+            KeyCode::Char('j') => {
+                // up
+                self.view_state.scroll_up();
+            }
+            KeyCode::Char('k') => {
+                self.view_state.scroll_down();
+                // down
             }
             KeyCode::Enter => {
                 if let Some(issue) = self.issues_list.get_selected() {
