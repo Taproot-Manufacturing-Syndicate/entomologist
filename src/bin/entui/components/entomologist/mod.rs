@@ -25,6 +25,7 @@ pub struct Entry {
     id: IssueHandle,
     state: String,
     assignee: Option<String>,
+    tags: Vec<String>,
     description: String,
 }
 
@@ -35,6 +36,7 @@ impl Entry {
             id: id.clone(),
             state: issue.state.to_string(),
             assignee: issue.assignee.clone(),
+            tags: issue.tags.clone(),
             description: issue.description.clone(),
         }
     }

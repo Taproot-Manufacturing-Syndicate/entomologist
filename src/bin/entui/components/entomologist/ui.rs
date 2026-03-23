@@ -34,6 +34,11 @@ impl Widget for &Entry {
             "TITLE: {}\nID: {}\nSTATE: {}",
             self.title, self.id, self.state
         );
+        let text = if !self.tags.is_empty() {
+            format!("{text}\nTAGS: {:?}", self.tags)
+        } else {
+            text
+        };
         let text = match &self.assignee {
             Some(assignee) => format!("{text}\nASSIGNEE: {}", assignee),
             None => format!("{text}\nASSIGNEE: NONE"),
