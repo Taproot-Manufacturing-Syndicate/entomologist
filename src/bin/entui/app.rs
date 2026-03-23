@@ -27,7 +27,7 @@ impl ViewState {
         match &self {
             ViewState::Issue{comments, ..} => {
                 comments.scroll_up();
-            }
+            },
             _ => {}
         }
     }
@@ -103,18 +103,26 @@ impl App {
             KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.events.send(AppEvent::Quit)
             }
-            KeyCode::Down => {
-                self.issues_list.select_next();
-            }
-            KeyCode::Up => {
-                self.issues_list.select_previous();
-            }
-            KeyCode::Char('j') => {
+            KeyCode::Down | KeyCode::Char('j') => {
                 // up
-                self.view_state.scroll_up();
+                match self.view_state {
+                    ViewState::Overview => {
+                        self.issues_list.select_next();
+                    },
+                    _ => {
+                        self.view_state.scroll_up();
+                    }
+                }
             }
-            KeyCode::Char('k') => {
-                self.view_state.scroll_down();
+            KeyCode::Up | KeyCode::Char('k') => {
+                match self.view_state {
+                    ViewState::Overview => {
+                        self.issues_list.select_previous();
+                    },
+                    _ => {
+                        self.view_state.scroll_down();
+                    }
+                }
                 // down
             }
             KeyCode::Enter => {
