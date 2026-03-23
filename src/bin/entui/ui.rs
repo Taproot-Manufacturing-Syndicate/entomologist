@@ -1,8 +1,7 @@
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Stylize},
-    widgets::{Block, BorderType, Paragraph, Widget},
+    layout::{Constraint, Direction, Layout, Rect},
+    widgets::{Widget, WidgetRef},
 };
 
 use crate::app::{App, ViewState};
@@ -30,7 +29,7 @@ impl Widget for &App {
                     .split(area);
 
                 issue.render(layout[0], buf);
-                comments.render(layout[1], buf);
+                comments.render_ref(layout[1], buf);
             }
         }
     }

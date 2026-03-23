@@ -1,19 +1,26 @@
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Style, Stylize},
+    style::{Color, Style},
     widgets::{
-        Block, BorderType, List, ListDirection, ListItem, Paragraph, StatefulWidget, Widget,
+        Block, List, ListDirection, ListItem, Paragraph, StatefulWidget, Widget, WidgetRef, Wrap,
     },
 };
 
 use entomologist::issue::Issue;
+// use ratatui::prelude::*;
+use tui_widget_list::{ListBuilder, ListView};
 
 use crate::components::entomologist::{CommentEntry, CommentsList, Entry, IssuesList};
 
-fn generate_list_item<'a>(id: &String, issue: &Issue) -> ListItem<'a> {
+fn generate_list_item<'a>(_id: &String, issue: &Issue) -> ListItem<'a> {
     let title = issue.title();
-    ListItem::new(format!("{title}"))
+    let comments = match issue.comments.len() {
+        0 => String::from("    "),
+        n => format!("🗨️ {n}"),
+    };
+
+    ListItem::new(format!("{comments}  {title}"))
 }
 
 // have to do this since neither Widget nor Issue were defined in this crate
@@ -99,7 +106,7 @@ impl Widget for &IssuesList {
     }
 }
 
-impl Widget for &CommentEntry {
+impl Widget for CommentEntry {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
         Self: Sized,
@@ -107,44 +114,38 @@ impl Widget for &CommentEntry {
         let title_text = format!("{} - {}", self.author, self.creation_time);
         let block = Block::bordered().title(title_text);
         let text = format!("{}", self.description);
-        let pg = Paragraph::new(text).block(block);
-
+        let pg = Paragraph::new(text).wrap(Wrap { trim: true }).block(block);
         pg.render(area, buf);
     }
 }
 
-impl Widget for &CommentsList {
-    fn render(self, area: Rect, buf: &mut Buffer)
+impl WidgetRef for CommentsList {
+    fn render_ref(&self, area: Rect, buf: &mut Buffer)
     where
         Self: Sized,
     {
-        let comment_list: Vec<CommentEntry> = self
-            .comments
-            .iter()
-            .map(|comment| CommentEntry::new_from_comment(comment))
-            .collect();
-        let mut constraints = vec![Constraint::Fill(1)];
-        let mut comment_constraints = vec![Constraint::Max(20); comment_list.len()];
-        constraints.append(&mut comment_constraints);
-        let layout = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(constraints)
-            .split(area);
+        let builder = ListBuilder::new(|context| {
+            let item = CommentEntry::new_from_comment(&self.comments[context.index]);
 
-        // COMMENT LIST
-        if comment_list.len() > 0 {
-            for i in 0..20 {
-                if i < comment_list.len() && i + 1 < layout.len() {
-                    comment_list[i].render(layout[i + 1], buf);
-                }
-            }
-        } else {
-            let title_text = format!("COMMENTS");
+            // annoyingly we have to do this because we need the size pre-calculated
+            // we could probably set the area in the item as part of the builder
+            // or maybe some other way of moving this information so we don't
+            // calculate it twice, but for now, lazy
+            let title_text = format!("{} - {}", item.author, item.creation_time);
             let block = Block::bordered().title(title_text);
-            let text = format!("NO COMMENTS");
-            let pg = Paragraph::new(text).centered().block(block);
+            let text = format!("{}", item.description);
+            let pg = Paragraph::new(text).wrap(Wrap { trim: true }).block(block);
 
-            pg.render(layout[0], buf);
-        }
+            let main_axis_size = pg.line_count(area.width) as u16;
+
+            (item, main_axis_size)
+        });
+
+        // let item_count = 2;
+        let list_v = ListView::new(builder, self.comments.len());
+        // let state = self.list_state.borrow_mut();
+
+        let state = &mut *self.list_state.borrow_mut();
+        StatefulWidget::render(list_v, area, buf, state);
     }
 }

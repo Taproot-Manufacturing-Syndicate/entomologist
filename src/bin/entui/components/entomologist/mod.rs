@@ -3,7 +3,7 @@ pub mod ui;
 use core::cell::RefCell;
 use entomologist::{
     comment::Comment,
-    issue::{Issue, IssueHandle, State},
+    issue::{Issue, IssueHandle},
     issues::Issues,
 };
 use ratatui::widgets::ListState;
@@ -74,6 +74,7 @@ impl IssuesList {
 }
 
 #[derive(Debug, Clone)]
+#[allow(unused)]
 pub struct CommentEntry {
     uuid: String,
     author: String,
@@ -92,11 +93,12 @@ impl CommentEntry {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[allow(unused)]
 pub struct CommentsList {
     comments: Vec<Comment>,
     // safety: this is only accessed from the UI thread
-    list_state: RefCell<ListState>,
+    list_state: RefCell<tui_widget_list::ListState>,
     selected_comment: RefCell<Option<Comment>>,
 }
 
@@ -110,7 +112,7 @@ impl CommentsList {
             let comments = issue.get_comments();
             Ok(Self {
                 comments,
-                list_state: RefCell::new(ListState::default()),
+                list_state: RefCell::new(tui_widget_list::ListState::default()),
                 selected_comment: RefCell::new(None),
             })
         } else {

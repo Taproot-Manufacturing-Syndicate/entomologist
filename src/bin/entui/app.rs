@@ -1,10 +1,8 @@
 use crate::components::entomologist::{CommentsList, Entry, IssuesList};
 use crate::event::{AppEvent, Event, EventHandler};
-use ratatui::{
-    DefaultTerminal,
-    crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
-};
+use ratatui::DefaultTerminal;
 
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -14,7 +12,7 @@ pub enum Error {
 }
 
 /// view states
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub enum ViewState {
     #[default]
     Overview,
