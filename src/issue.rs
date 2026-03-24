@@ -323,14 +323,6 @@ impl Issue {
         Ok(())
     }
 
-    pub fn read_state(&mut self) -> Result<(), IssueError> {
-        let mut state_filename = std::path::PathBuf::from(&self.dir);
-        state_filename.push("state");
-        let state_string = std::fs::read_to_string(state_filename)?;
-        self.state = State::from_str(state_string.trim())?;
-        Ok(())
-    }
-
     /// Set the `done_time` of the Issue.  Commits.
     pub fn set_done_time(
         &mut self,
