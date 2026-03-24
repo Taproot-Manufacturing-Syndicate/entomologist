@@ -352,7 +352,7 @@ impl Issue {
         Ok(())
     }
 
-    /// Set the Assignee of an Issue.
+    /// Set the Assignee of an Issue. Commits.
     pub fn set_assignee(&mut self, new_assignee: &str) -> Result<(), IssueError> {
         let old_assignee = match &self.assignee {
             Some(assignee) => assignee.clone(),
