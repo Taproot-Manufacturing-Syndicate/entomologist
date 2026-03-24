@@ -1,10 +1,15 @@
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    widgets::{Block, Clear, Paragraph, Widget, WidgetRef},
+    style::{Color, Style},
+    widgets::{Block, Clear, List, ListDirection, ListItem, Paragraph, Widget, WidgetRef},
 };
 
 use crate::app::{App, PopupState, ViewManager, ViewState};
+
+use entomologist::issue::State;
+
+use strum::{EnumIter, IntoEnumIterator};
 
 impl Widget for &ViewState {
     fn render(self, area: Rect, buf: &mut Buffer) {
@@ -49,8 +54,19 @@ impl Widget for &PopupState {
                 // paragraph.render(centered_area, buf);
                 // another solution is to use the inner area of the block
                 let inner_area = popup_block.inner(centered_area);
-                let paragraph = Paragraph::new("Lorem ipsum").block(popup_block);
-                paragraph.render(inner_area, buf);
+
+                let list = State::iter()
+                    .map(|state| {
+                        let string = Into::<&'static str>::into(state);
+                        ListItem::new(string)
+                    })
+                    .collect::<List>()
+                    .block(popup_block)
+                    .style(Style::new().white())
+                    .highlight_style(Style::new().bg(Color::White).fg(Color::Black))
+                    .direction(ListDirection::TopToBottom);
+
+                list.render(inner_area, buf);
                 // frame.render_widget(your_widget, inner_area);
             }
         }

@@ -5,7 +5,9 @@ use std::str::FromStr;
 #[cfg(feature = "log")]
 use log::debug;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, serde::Deserialize)]
+use strum_macros::{EnumIter, IntoStaticStr};
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq, serde::Deserialize, EnumIter, IntoStaticStr)]
 /// These are the states an issue can be in.
 pub enum State {
     New,

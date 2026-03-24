@@ -110,7 +110,7 @@ impl ViewManager {
 
     pub fn issue_state_popup_toggle(&mut self) {
          match &self.popup_state {
-             Some(popup) => self.popup_state = None,
+             Some(_) => self.popup_state = None,
              None => self.popup_state = Some(PopupState::StateSelection),
          }
     }
@@ -190,7 +190,6 @@ impl App {
             KeyCode::Char('s') => {
                 self.view_manager.issue_state_popup_toggle();
                 // set the state of an issue
-                
             }
             // Other handlers you could add here.
             _ => {}

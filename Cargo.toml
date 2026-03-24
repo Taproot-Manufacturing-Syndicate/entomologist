@@ -30,6 +30,8 @@ ratatui = { version = "0.30.0", features = ["unstable-rendered-line-info", "unst
 tokio = { version = "1.40.0", features = ["full"] }
 color-eyre = { version = "0.6.3" }
 tui-widget-list = "0.15.0"
+strum = { version = "0.28.0", features = ["derive"] }
+strum_macros = "0.28.0"
 
 
 #crossterm = { version = "0.28.1", features = ["event-stream"], optional = true }
