@@ -164,6 +164,12 @@ impl Comment {
         Ok(())
     }
 
+    /// Opens the Comment's `description` file in an editor.  Validates the
+    /// editor's exit code.  Updates the Comment's internal description
+    /// from what the user saved in the file. Commits.
+    ///
+    /// Used by Issue::add_comment() when no description is supplied,
+    /// and (FIXME: in the future) used by `ent edit COMMENT`.
     pub fn edit_description(&mut self) -> Result<(), CommentError> {
         self.edit_description_file()?;
         let description_filename = self.description_filename();
@@ -185,14 +191,29 @@ impl Comment {
         }
         Ok(())
     }
+}
 
-    /// Opens the Comment's `description` file in an editor.  Validates
-    /// the editor's exit code.  Updates the Comment's internal
-    /// description from what the user saved in the file.
-    ///
-    /// Used by Issue::add_comment() when no description is supplied,
-    /// and (FIXME: in the future) used by `ent edit COMMENT`.
-    pub fn edit_description_file(&mut self) -> Result<(), CommentError> {
+// This is the private, internal API.
+impl Comment {
+    fn description_filename(&self) -> std::path::PathBuf {
+        let mut description_filename = std::path::PathBuf::from(&self.dir);
+        description_filename.push("description");
+        description_filename
+    }
+
+    fn author_filename(&self) -> std::path::PathBuf {
+        let mut author_filename = std::path::PathBuf::from(&self.dir);
+        author_filename.push("author");
+        author_filename
+    }
+
+    fn creation_time_filename(&self) -> std::path::PathBuf {
+        let mut creation_time_filename = std::path::PathBuf::from(&self.dir);
+        creation_time_filename.push("creation_time");
+        creation_time_filename
+    }
+
+    fn edit_description_file(&mut self) -> Result<(), CommentError> {
         if !std::io::stdin().is_terminal() || !std::io::stdout().is_terminal() {
             return Err(CommentError::StdioIsNotTerminal);
         }
@@ -225,27 +246,6 @@ impl Comment {
         }
         self.read_description()?;
         Ok(())
-    }
-}
-
-// This is the private, internal API.
-impl Comment {
-    fn description_filename(&self) -> std::path::PathBuf {
-        let mut description_filename = std::path::PathBuf::from(&self.dir);
-        description_filename.push("description");
-        description_filename
-    }
-
-    fn author_filename(&self) -> std::path::PathBuf {
-        let mut author_filename = std::path::PathBuf::from(&self.dir);
-        author_filename.push("author");
-        author_filename
-    }
-
-    fn creation_time_filename(&self) -> std::path::PathBuf {
-        let mut creation_time_filename = std::path::PathBuf::from(&self.dir);
-        creation_time_filename.push("creation_time");
-        creation_time_filename
     }
 }
 
