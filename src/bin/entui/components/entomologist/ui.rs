@@ -68,6 +68,12 @@ impl Widget for &StateSelectorWidget {
             .direction(ListDirection::TopToBottom);
         let state = &mut *self.list_state.borrow_mut();
         StatefulWidget::render(list, area, buf, state);
+
+        let state_list: Vec<_> = State::iter().collect();
+        match state.selected() {
+            Some(index) => self.selected_state.replace(state_list[index].clone()),
+            None => self.selected_state.replace(State::New {}),
+        };
     }
 }
 

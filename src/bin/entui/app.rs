@@ -101,6 +101,7 @@ impl ViewManager {
             self.view_state.scroll_up();
         }
     }
+
     pub fn scroll_down(&self) {
         if let Some(popup_state) = &self.popup_state {
             popup_state.scroll_down();
@@ -119,16 +120,26 @@ impl ViewManager {
     }
 
     pub fn enter(&mut self) {
-        match &self.view_state {    
-            ViewState::Overview {issue_list} => {
-                if let Some(issue) = issue_list.get_selected() {
-                    if let Ok(comments) = CommentsList::new(issue.clone()) {
-                        self.view_state = ViewState::Issue { issue, comments };
-                    }
+        if let Some(popup_state) = &self.popup_state {
+            match popup_state {
+                PopupState::StateSelection {inner_widget} => {
+                    let state = inner_widget.get_selected();
+                    // TODO: set the state of the issue here
                 }
             }
-            ViewState::Issue{comments, ..} => {
-                comments.scroll_down();
+        }
+        else {
+            match &self.view_state {    
+                ViewState::Overview {issue_list} => {
+                    if let Some(issue) = issue_list.get_selected() {
+                        if let Ok(comments) = CommentsList::new(issue.clone()) {
+                            self.view_state = ViewState::Issue { issue, comments };
+                        }
+                    }
+                }
+                ViewState::Issue{comments, ..} => {
+                    comments.scroll_down();
+                }
             }
         }
     }

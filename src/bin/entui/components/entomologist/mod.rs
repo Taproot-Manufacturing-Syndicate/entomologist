@@ -3,7 +3,7 @@ pub mod ui;
 use core::cell::RefCell;
 use entomologist::{
     comment::Comment,
-    issue::{Issue, IssueHandle},
+    issue::{Issue, IssueHandle, State},
     issues::Issues,
 };
 use ratatui::widgets::ListState;
@@ -45,12 +45,14 @@ impl Entry {
 #[derive(Debug)]
 pub struct StateSelectorWidget {
     list_state: RefCell<ListState>,
+    selected_state: RefCell<State>,
 }
 
 impl StateSelectorWidget {
     pub fn new() -> Self {
         Self {
             list_state: RefCell::new(ListState::default()),
+            selected_state: RefCell::new(State::New),
         }
     }
 
@@ -60,6 +62,10 @@ impl StateSelectorWidget {
 
     pub fn scroll_down(&self) {
         self.list_state.borrow_mut().select_previous();
+    }
+
+    pub fn get_selected(&self) -> State {
+        self.selected_state.borrow().clone()
     }
 }
 
