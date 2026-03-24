@@ -1,0 +1,17 @@
+`Issues` is an immutable (read-only) representation of the database
+in git. It is made by creating a worktree containing a detached-head
+checkout of the git ref, deserializing it, then removing the worktree
+from the filesystem.
+
+`IssuesMut` is a mutable (read/write) representation of the database in
+git. It is made by creating a relatively long-lived worktree containing
+a normal (named branch) checkout of the git ref, deserializing it,
+and *leaving* the worktree on disk. The worktree is dropped when the
+IssuesMut is dropped, and removed from the filesystem at that point.
+
+Because the IssuesMut worktree is kept around, and because it contains
+a named-branch checkout (not a detached head), it can be modified,
+and the modifications can be added to the git ref by commit.
+
+The new GitDb representation similarly presents GitDb (immutable) and
+GitDbMut (mutable).
