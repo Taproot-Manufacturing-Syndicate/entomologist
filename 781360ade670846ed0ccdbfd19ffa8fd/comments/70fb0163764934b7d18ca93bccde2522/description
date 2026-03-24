@@ -1,0 +1,21 @@
+# Current code
+
+ent cli calls one of these two functions to access the db:
+    ```
+    fn make_issues_database(
+        issues_database_source: &IssuesDatabaseSource,
+        access_type: IssuesDatabaseAccess,
+    ) -> Result<IssuesDatabase, Error>
+    ```
+        Make a long-lived IssuesDatabase by checking the db ref out into
+        an ephemeral worktree, either in detached mode (for RO access)
+        or in normal mode (for RW access).
+
+
+    ```
+    entomologist::database::read_issues_database(
+        issues_database_source: &IssuesDatabaseSource,
+    ) -> Result<crate::issues::Issues, Error>
+    ```
+        Call `make_issues_database` to make an RO checkout, read Issues
+        from it, then close (throw away) the db.
