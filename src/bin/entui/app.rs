@@ -1,4 +1,4 @@
-use crate::components::entomologist::{CommentsList, Entry, IssuesList};
+use crate::components::entomologist::{CommentsList, Entry, IssuesList, StateSelectorWidget};
 use crate::event::{AppEvent, Event, EventHandler};
 use ratatui::DefaultTerminal;
 
@@ -57,7 +57,24 @@ impl ViewState {
 
 #[derive(Debug)]
 pub enum PopupState {
-    StateSelection
+    StateSelection{inner_widget: StateSelectorWidget},
+}
+
+impl PopupState {
+    fn scroll_up(&self) {
+        match &self {
+            PopupState::StateSelection{ inner_widget } => {
+                inner_widget.scroll_up();
+            }
+        }
+    }
+    fn scroll_down(&self) {
+        match &self {
+            PopupState::StateSelection{ inner_widget } => {
+                inner_widget.scroll_down();
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -78,10 +95,18 @@ impl Default for ViewManager {
 
 impl ViewManager {
     pub fn scroll_up(&self) {
-        self.view_state.scroll_up();
+        if let Some(popup_state) = &self.popup_state {
+            popup_state.scroll_up();
+        } else {
+            self.view_state.scroll_up();
+        }
     }
     pub fn scroll_down(&self) {
-        self.view_state.scroll_down();
+        if let Some(popup_state) = &self.popup_state {
+            popup_state.scroll_down();
+        } else {
+            self.view_state.scroll_down();
+        }
     }
     // TODO: make this not need mutability
     pub fn escape(&mut self) {
@@ -111,7 +136,7 @@ impl ViewManager {
     pub fn issue_state_popup_toggle(&mut self) {
          match &self.popup_state {
              Some(_) => self.popup_state = None,
-             None => self.popup_state = Some(PopupState::StateSelection),
+             None => self.popup_state = Some(PopupState::StateSelection{inner_widget: StateSelectorWidget::new()}),
          }
     }
 }

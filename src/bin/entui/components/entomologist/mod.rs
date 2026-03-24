@@ -43,6 +43,27 @@ impl Entry {
 }
 
 #[derive(Debug)]
+pub struct StateSelectorWidget {
+    list_state: RefCell<ListState>,
+}
+
+impl StateSelectorWidget {
+    pub fn new() -> Self {
+        Self {
+            list_state: RefCell::new(ListState::default()),
+        }
+    }
+
+    pub fn scroll_up(&self) {
+        self.list_state.borrow_mut().select_next();
+    }
+
+    pub fn scroll_down(&self) {
+        self.list_state.borrow_mut().select_previous();
+    }
+}
+
+#[derive(Debug)]
 pub struct IssuesList {
     issues: Issues,
     // safety: this is only accessed from the UI thread

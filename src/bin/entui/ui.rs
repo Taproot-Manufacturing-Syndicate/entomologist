@@ -7,10 +7,6 @@ use ratatui::{
 
 use crate::app::{App, PopupState, ViewManager, ViewState};
 
-use entomologist::issue::State;
-
-use strum::{EnumIter, IntoEnumIterator};
-
 impl Widget for &ViewState {
     fn render(self, area: Rect, buf: &mut Buffer) {
         match &self {
@@ -25,8 +21,6 @@ impl Widget for &ViewState {
 
                 // BLOCK 0 - ISSUE LIST
                 issue_list.render(layout[0], buf);
-
-                // if *popup {
             }
             ViewState::Issue { issue, comments } => {
                 let layout = Layout::default()
@@ -44,30 +38,15 @@ impl Widget for &ViewState {
 impl Widget for &PopupState {
     fn render(self, area: Rect, buf: &mut Buffer) {
         match &self {
-            PopupState::StateSelection => {
+            PopupState::StateSelection { inner_widget } => {
                 let popup_block = Block::bordered().title("SET STATE");
                 let centered_area =
                     area.centered(Constraint::Percentage(60), Constraint::Percentage(20));
-                // clears out any background in the area before rendering the popup
                 let clear = Clear {};
                 clear.render(centered_area, buf);
-                // paragraph.render(centered_area, buf);
-                // another solution is to use the inner area of the block
                 let inner_area = popup_block.inner(centered_area);
-
-                let list = State::iter()
-                    .map(|state| {
-                        let string = Into::<&'static str>::into(state);
-                        ListItem::new(string)
-                    })
-                    .collect::<List>()
-                    .block(popup_block)
-                    .style(Style::new().white())
-                    .highlight_style(Style::new().bg(Color::White).fg(Color::Black))
-                    .direction(ListDirection::TopToBottom);
-
-                list.render(inner_area, buf);
-                // frame.render_widget(your_widget, inner_area);
+                popup_block.render(centered_area, buf);
+                inner_widget.render(inner_area, buf);
             }
         }
     }

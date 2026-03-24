@@ -8,11 +8,15 @@ use ratatui::{
     },
 };
 
-use entomologist::issue::Issue;
-// use ratatui::prelude::*;
+use strum::{EnumIter, IntoEnumIterator};
+
+use entomologist::issue::{Issue, State};
+
 use tui_widget_list::{ListBuilder, ListView};
 
-use crate::components::entomologist::{CommentEntry, CommentsList, Entry, IssuesList};
+use crate::components::entomologist::{
+    CommentEntry, CommentsList, Entry, IssuesList, StateSelectorWidget,
+};
 
 fn generate_list_item<'a>(_id: &String, issue: &Issue) -> ListItem<'a> {
     let title = issue.title();
@@ -48,6 +52,22 @@ impl Widget for &Entry {
         let pg = Paragraph::new(text).wrap(Wrap { trim: true }).block(block);
 
         pg.render(area, buf);
+    }
+}
+
+impl Widget for &StateSelectorWidget {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let list = State::iter()
+            .map(|state| {
+                let string = Into::<&'static str>::into(state);
+                ListItem::new(string)
+            })
+            .collect::<List>()
+            .style(Style::new().white())
+            .highlight_style(Style::new().bg(Color::White).fg(Color::Black))
+            .direction(ListDirection::TopToBottom);
+        let state = &mut *self.list_state.borrow_mut();
+        StatefulWidget::render(list, area, buf, state);
     }
 }
 
