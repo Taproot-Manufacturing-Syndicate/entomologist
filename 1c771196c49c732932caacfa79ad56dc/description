@@ -1,1 +1,4 @@
 add get() and get_mut() API to database
+
+The objects you get from `get()` and `get_mut()` actually represent
+fairly different things.
