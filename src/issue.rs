@@ -203,36 +203,6 @@ impl Issue {
         })
     }
 
-    fn read_comments(
-        comments: &mut Vec<crate::comment::Comment>,
-        dir: &std::path::Path,
-    ) -> Result<(), IssueError> {
-        for direntry in (dir.read_dir()?).flatten() {
-            let comment = crate::comment::Comment::new_from_dir(&direntry.path())?;
-            comments.push(comment);
-        }
-        comments.sort_by(|a, b| a.creation_time.cmp(&b.creation_time));
-        Ok(())
-    }
-
-    fn read_dependencies(dir: &std::path::Path) -> Result<Option<Vec<IssueHandle>>, IssueError> {
-        let mut dependencies: Option<Vec<String>> = None;
-        for direntry in (dir.read_dir()?).flatten() {
-            match &mut dependencies {
-                Some(deps) => {
-                    deps.push(direntry.file_name().into_string().unwrap());
-                }
-                None => {
-                    dependencies = Some(vec![direntry.file_name().into_string().unwrap()]);
-                }
-            }
-        }
-        if let Some(deps) = &mut dependencies {
-            deps.sort();
-        }
-        Ok(dependencies)
-    }
-
     /// Look up a Comment in the Issue, based on its Comment UUID.
     pub fn get_comment(&self, comment_uuid: &str) -> Option<&crate::comment::Comment> {
         self.comments.iter().find(|c| c.uuid == comment_uuid)
@@ -624,6 +594,36 @@ impl Issue {
         let mut filename = tag.replace(",", ",0");
         filename = filename.replace("/", ",1");
         filename
+    }
+
+    fn read_comments(
+        comments: &mut Vec<crate::comment::Comment>,
+        dir: &std::path::Path,
+    ) -> Result<(), IssueError> {
+        for direntry in (dir.read_dir()?).flatten() {
+            let comment = crate::comment::Comment::new_from_dir(&direntry.path())?;
+            comments.push(comment);
+        }
+        comments.sort_by(|a, b| a.creation_time.cmp(&b.creation_time));
+        Ok(())
+    }
+
+    fn read_dependencies(dir: &std::path::Path) -> Result<Option<Vec<IssueHandle>>, IssueError> {
+        let mut dependencies: Option<Vec<String>> = None;
+        for direntry in (dir.read_dir()?).flatten() {
+            match &mut dependencies {
+                Some(deps) => {
+                    deps.push(direntry.file_name().into_string().unwrap());
+                }
+                None => {
+                    dependencies = Some(vec![direntry.file_name().into_string().unwrap()]);
+                }
+            }
+        }
+        if let Some(deps) = &mut dependencies {
+            deps.sort();
+        }
+        Ok(dependencies)
     }
 
     fn commit_tags(&self, commit_message: &str) -> Result<(), IssueError> {
