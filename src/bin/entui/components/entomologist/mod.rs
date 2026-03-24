@@ -23,7 +23,7 @@ pub enum Error {
 pub struct Entry {
     title: String,
     id: IssueHandle,
-    state: String,
+    pub state: State,
     assignee: Option<String>,
     tags: Vec<String>,
     description: String,
@@ -34,11 +34,27 @@ impl Entry {
         Entry {
             title: String::from(issue.title()),
             id: id.clone(),
-            state: issue.state.to_string(),
+            state: issue.state.clone(),
             assignee: issue.assignee.clone(),
             tags: issue.tags.clone(),
             description: issue.description.clone(),
         }
+    }
+    pub fn write_issue_to_db(&self) -> Result<(), Error> {
+        let issues_db_source =
+            entomologist::database::IssuesDatabaseSource::Branch("entomologist-data");
+        let issues_database = entomologist::database::make_issues_database(
+            &issues_db_source,
+            entomologist::database::IssuesDatabaseAccess::ReadWrite,
+        )?;
+
+        let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+
+        // TODO: for now only update state
+        if let Some(issue) = issues.issues.get_mut(&self.id) {
+            issue.set_state(self.state.clone());
+        }
+        Ok(())
     }
 }
 

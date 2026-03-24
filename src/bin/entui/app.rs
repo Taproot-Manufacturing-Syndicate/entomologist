@@ -124,9 +124,26 @@ impl ViewManager {
             match popup_state {
                 PopupState::StateSelection {inner_widget} => {
                     let state = inner_widget.get_selected();
-                    // TODO: set the state of the issue here
+                    // TODO: this is super gross
+                    match &self.view_state {
+                        ViewState::Overview {issue_list} => {
+                            if let Some(mut issue) = issue_list.get_selected() {
+                                issue.state = state;
+                                // TODO: handle this error
+                                issue.write_issue_to_db();
+                            }
+                        }
+                        ViewState::Issue{issue, ..} => {
+                                // TODO: yuck - don't clone here. 
+                                let mut tmp_issue = issue.clone();
+                                tmp_issue.state = state;
+                                // TODO: handle this error
+                                tmp_issue.write_issue_to_db();
+                        }
+                    }
                 }
             }
+            self.popup_state = None;
         }
         else {
             match &self.view_state {    
@@ -137,8 +154,7 @@ impl ViewManager {
                         }
                     }
                 }
-                ViewState::Issue{comments, ..} => {
-                    comments.scroll_down();
+                ViewState::Issue{..} => {
                 }
             }
         }
