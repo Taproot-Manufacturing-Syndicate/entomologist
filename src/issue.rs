@@ -233,6 +233,11 @@ impl Issue {
         Ok(dependencies)
     }
 
+    /// Look up a Comment in the Issue, based on its Comment UUID.
+    pub fn get_comment(&self, comment_uuid: &str) -> Option<&crate::comment::Comment> {
+        self.comments.iter().find(|c| c.uuid == comment_uuid)
+    }
+
     /// Add a new Comment to the Issue.  Commits.
     pub fn add_comment(
         &mut self,
