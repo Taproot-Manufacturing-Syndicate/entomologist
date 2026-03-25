@@ -43,7 +43,7 @@ impl IssuesMut {
         self.issues.get_issue(issue_id)
     }
 
-    pub fn get_mut_issue(&mut self, issue_id: &str) -> Option<&mut crate::issue::Issue> {
+    pub fn get_issue_mut(&mut self, issue_id: &str) -> Option<&mut crate::issue::Issue> {
         self.issues.issues.get_mut(issue_id)
     }
 

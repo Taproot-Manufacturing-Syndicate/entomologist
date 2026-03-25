@@ -264,7 +264,7 @@ fn handle_command(
 
         Commands::Edit { uuid } => {
             let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
-            if let Some(issue) = issues.get_mut_issue(uuid) {
+            if let Some(issue) = issues.get_issue_mut(uuid) {
                 match issue.edit_description() {
                     Err(entomologist::issue::IssueError::EmptyDescription) => {
                         println!("aborted issue edit");
@@ -357,7 +357,7 @@ fn handle_command(
         } => match new_state {
             Some(new_state) => {
                 let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
-                match issues.get_mut_issue(issue_id) {
+                match issues.get_issue_mut(issue_id) {
                     Some(issue) => {
                         let current_state = issue.state.clone();
                         issue.set_state(new_state.clone())?;
@@ -388,7 +388,7 @@ fn handle_command(
             description,
         } => {
             let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
-            let Some(issue) = issues.get_mut_issue(issue_id) else {
+            let Some(issue) = issues.get_issue_mut(issue_id) else {
                 return Err(anyhow::anyhow!("issue {} not found", issue_id));
             };
             match issue.add_comment(description) {
@@ -422,7 +422,7 @@ fn handle_command(
         } => match new_assignee {
             Some(new_assignee) => {
                 let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
-                let Some(issue) = issues.get_mut_issue(issue_id) else {
+                let Some(issue) = issues.get_issue_mut(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
                 let old_assignee: String = match &issue.assignee {
@@ -454,7 +454,7 @@ fn handle_command(
                     return Err(anyhow::anyhow!("invalid zero-length tag"));
                 }
                 let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
-                let Some(issue) = issues.get_mut_issue(issue_id) else {
+                let Some(issue) = issues.get_issue_mut(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
                 if let Some(tag) = tag.strip_prefix('-') {
@@ -491,7 +491,7 @@ fn handle_command(
             Some(done_time) => {
                 // Add or remove tag.
                 let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
-                let Some(issue) = issues.get_mut_issue(issue_id) else {
+                let Some(issue) = issues.get_issue_mut(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
                 let done_time = match chrono::DateTime::parse_from_rfc3339(done_time) {
@@ -522,7 +522,7 @@ fn handle_command(
             Some(dep_id) => {
                 let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
                 if let Some(_dep_issue) = issues.get_issue(dep_id) {
-                    if let Some(issue) = issues.get_mut_issue(issue_id) {
+                    if let Some(issue) = issues.get_issue_mut(issue_id) {
                         issue.add_dependency(dep_id.clone())?;
                     } else {
                         Err(anyhow::anyhow!("issue {} not found", issue_id))?;
