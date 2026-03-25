@@ -809,4 +809,41 @@ mod tests {
         };
         assert_eq!(issue, expected);
     }
+
+    #[test]
+    fn invalid_issue_0() {
+        let r = crate::Issues::new_from_git("entomologist-data-test-0003");
+        let Err(crate::issues::Error::IssueError(IssueError::ChronoParseError(chrono_parse_error))) =
+            r
+        else {
+            panic!("unexpected result");
+        };
+        assert_eq!(
+            chrono_parse_error.kind(),
+            chrono::format::ParseErrorKind::Invalid
+        );
+    }
+
+    #[test]
+    fn invalid_issue_1() {
+        let r = crate::Issues::new_from_git("entomologist-data-test-0004");
+        let Err(crate::issues::Error::IssueError(IssueError::ChronoParseError(chrono_parse_error))) =
+            r
+        else {
+            panic!("unexpected result");
+        };
+        assert_eq!(
+            chrono_parse_error.kind(),
+            chrono::format::ParseErrorKind::TooShort
+        );
+    }
+
+    #[test]
+    fn invalid_issue_2() {
+        let r = crate::Issues::new_from_git("entomologist-data-test-0005");
+        let Err(crate::issues::Error::IssueError(IssueError::StdIoError(os_error))) = r else {
+            panic!("unexpected result");
+        };
+        assert_eq!(os_error.kind(), std::io::ErrorKind::NotFound);
+    }
 }
