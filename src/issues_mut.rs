@@ -56,4 +56,10 @@ impl IssuesMut {
     pub fn iter_mut(&mut self) -> std::collections::hash_map::IterMut<'_, String, crate::Issue> {
         self.issues.iter_mut()
     }
+
+    /// This converts an IssuesMut into an Issues, which drops the
+    /// long-lived named-branch worktree of the IssuesMut.
+    pub fn drop_mut(self) -> crate::Issues {
+        self.issues
+    }
 }
