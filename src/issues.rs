@@ -10,8 +10,8 @@ pub struct Config {}
 /// GitDb branch, and is dropped as soon as the Issues are deserialized.
 #[derive(Debug, Default, PartialEq)]
 pub struct Issues {
-    pub issues: std::collections::HashMap<String, crate::issue::Issue>,
-    pub config: Config,
+    issues: std::collections::HashMap<String, crate::issue::Issue>,
+    config: Config,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -82,8 +82,20 @@ impl Issues {
         self.issues.get(issue_id)
     }
 
+    /// Only public within the entomologist library crate.
+    pub(crate) fn get_issue_mut(&mut self, issue_id: &str) -> Option<&mut crate::issue::Issue> {
+        self.issues.get_mut(issue_id)
+    }
+
     pub fn iter(&self) -> std::collections::hash_map::Iter<'_, String, crate::Issue> {
         self.issues.iter()
+    }
+
+    /// Only public within the entomologist library crate.
+    pub(crate) fn iter_mut(
+        &mut self,
+    ) -> std::collections::hash_map::IterMut<'_, String, crate::Issue> {
+        self.issues.iter_mut()
     }
 
     pub fn add_issue(&mut self, issue: crate::Issue) {

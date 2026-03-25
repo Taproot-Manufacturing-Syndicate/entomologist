@@ -9,8 +9,8 @@ use log::debug;
 /// changes will be incorporated into the GitDb ref as commits.
 #[derive(Debug)]
 pub struct IssuesMut {
-    pub gitdb_mut: crate::gitdb::GitDbMut,
-    pub issues: crate::Issues,
+    gitdb_mut: crate::gitdb::GitDbMut,
+    issues: crate::Issues,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -36,7 +36,7 @@ impl IssuesMut {
     }
 
     pub fn add_issue(&mut self, issue: crate::issue::Issue) {
-        self.issues.issues.insert(issue.id.clone(), issue);
+        self.issues.add_issue(issue);
     }
 
     pub fn get_issue(&self, issue_id: &str) -> Option<&crate::issue::Issue> {
@@ -44,7 +44,7 @@ impl IssuesMut {
     }
 
     pub fn get_issue_mut(&mut self, issue_id: &str) -> Option<&mut crate::issue::Issue> {
-        self.issues.issues.get_mut(issue_id)
+        self.issues.get_issue_mut(issue_id)
     }
 
     /// Iterate over the Issue objects.
@@ -54,6 +54,6 @@ impl IssuesMut {
 
     /// Iterate over the Issue objects (mutable).
     pub fn iter_mut(&mut self) -> std::collections::hash_map::IterMut<'_, String, crate::Issue> {
-        self.issues.issues.iter_mut()
+        self.issues.iter_mut()
     }
 }

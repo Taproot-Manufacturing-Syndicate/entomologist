@@ -124,7 +124,7 @@ fn handle_command(
                 entomologist::issue::State,
                 Vec<&entomologist::issue::IssueHandle>,
             >::new();
-            for (uuid, issue) in issues.issues.iter() {
+            for (uuid, issue) in issues.iter() {
                 if !filter.include_states.contains(&issue.state) {
                     continue;
                 }
@@ -179,13 +179,13 @@ fn handle_command(
                     continue;
                 }
                 these_uuids.sort_by(|a_id, b_id| {
-                    let a = issues.issues.get(*a_id).unwrap();
-                    let b = issues.issues.get(*b_id).unwrap();
+                    let a = issues.get_issue(*a_id).unwrap();
+                    let b = issues.get_issue(*b_id).unwrap();
                     a.creation_time.cmp(&b.creation_time)
                 });
                 println!("{state:?}:");
                 for uuid in these_uuids {
-                    let issue = issues.issues.get(*uuid).unwrap();
+                    let issue = issues.get_issue(*uuid).unwrap();
                     let comments = match issue.comments.len() {
                         0 => String::from("   "),
                         n => format!("🗨️ {n}"),
@@ -195,7 +195,7 @@ fn handle_command(
                         Some(dependencies) => {
                             let mut count: usize = 0;
                             for dep_id in dependencies {
-                                if let Some(d) = issues.issues.get(dep_id)
+                                if let Some(d) = issues.get_issue(dep_id)
                                     && d.state != entomologist::issue::State::Done
                                     && d.state != entomologist::issue::State::WontDo
                                 {
@@ -371,7 +371,7 @@ fn handle_command(
             }
             None => {
                 let issues = entomologist::Issues::new_from_git(git_ref)?;
-                match issues.issues.get(issue_id) {
+                match issues.get_issue(issue_id) {
                     Some(issue) => {
                         println!("issue: {issue_id}");
                         println!("state: {}", issue.state);
@@ -435,7 +435,7 @@ fn handle_command(
             }
             None => {
                 let issues = entomologist::Issues::new_from_git(git_ref)?;
-                let Some(original_issue) = issues.issues.get(issue_id) else {
+                let Some(original_issue) = issues.get_issue(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
                 let old_assignee: String = match &original_issue.assignee {
@@ -466,7 +466,7 @@ fn handle_command(
             None => {
                 // Just list the tags.
                 let issues = entomologist::Issues::new_from_git(git_ref)?;
-                let Some(issue) = issues.issues.get(issue_id) else {
+                let Some(issue) = issues.get_issue(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
                 match &issue.tags.len() {
@@ -505,7 +505,7 @@ fn handle_command(
             }
             None => {
                 let issues = entomologist::Issues::new_from_git(git_ref)?;
-                let Some(issue) = issues.issues.get(issue_id) else {
+                let Some(issue) = issues.get_issue(issue_id) else {
                     return Err(anyhow::anyhow!("issue {} not found", issue_id));
                 };
                 match &issue.done_time {
@@ -533,7 +533,7 @@ fn handle_command(
             }
             None => {
                 let issues = entomologist::Issues::new_from_git(git_ref)?;
-                let Some(issue) = issues.issues.get(issue_id) else {
+                let Some(issue) = issues.get_issue(issue_id) else {
                     Err(anyhow::anyhow!("issue {} not found", issue_id))?
                 };
                 println!("DEPENDENCIES:");
