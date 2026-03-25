@@ -813,15 +813,27 @@ mod tests {
     #[test]
     fn invalid_issue_0() {
         let r = crate::Issues::new_from_git("entomologist-data-test-0003");
-        let Err(crate::issues::Error::IssueError(IssueError::ChronoParseError(chrono_parse_error))) =
-            r
+        let Err(crate::issues::Error::IssueError(IssueError::ChronoParseError(
+            _chrono_parse_error,
+        ))) = r
         else {
             panic!("unexpected result: {r:#?}");
         };
-        assert_eq!(
-            chrono_parse_error.kind(),
-            chrono::format::ParseErrorKind::Invalid
-        );
+
+        // This test tries to parse the string "not a real date" as a
+        // chrono time, and different versions of chrono reject it with
+        // different errors.
+        //
+        // - chrono 0.4.41 says "Invalid"
+        // - chrono 0.4.44 says "Too Short"
+        //
+        // I guess it doesn't matter what the ParseErrorKind is, as long as it's a
+        // ChronoParseError.
+        //
+        // assert_eq!(
+        //     chrono_parse_error.kind(),
+        //     chrono::format::ParseErrorKind::Invalid
+        // );
     }
 
     #[test]
