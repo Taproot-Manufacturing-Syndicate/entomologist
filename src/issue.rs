@@ -816,7 +816,7 @@ mod tests {
         let Err(crate::issues::Error::IssueError(IssueError::ChronoParseError(chrono_parse_error))) =
             r
         else {
-            panic!("unexpected result");
+            panic!("unexpected result: {r:#?}");
         };
         assert_eq!(
             chrono_parse_error.kind(),
@@ -830,7 +830,7 @@ mod tests {
         let Err(crate::issues::Error::IssueError(IssueError::ChronoParseError(chrono_parse_error))) =
             r
         else {
-            panic!("unexpected result");
+            panic!("unexpected result: {r:#?}");
         };
         assert_eq!(
             chrono_parse_error.kind(),
@@ -842,7 +842,7 @@ mod tests {
     fn invalid_issue_2() {
         let r = crate::Issues::new_from_git("entomologist-data-test-0005");
         let Err(crate::issues::Error::IssueError(IssueError::StdIoError(os_error))) = r else {
-            panic!("unexpected result");
+            panic!("unexpected result: {r:#?}");
         };
         assert_eq!(os_error.kind(), std::io::ErrorKind::NotFound);
     }
