@@ -179,13 +179,13 @@ fn handle_command(
                     continue;
                 }
                 these_uuids.sort_by(|a_id, b_id| {
-                    let a = issues.get_issue(*a_id).unwrap();
-                    let b = issues.get_issue(*b_id).unwrap();
+                    let a = issues.get_issue(a_id).unwrap();
+                    let b = issues.get_issue(b_id).unwrap();
                     a.creation_time.cmp(&b.creation_time)
                 });
                 println!("{state:?}:");
                 for uuid in these_uuids {
-                    let issue = issues.get_issue(*uuid).unwrap();
+                    let issue = issues.get_issue(uuid).unwrap();
                     let comments = match issue.comments.len() {
                         0 => String::from("   "),
                         n => format!("🗨️ {n}"),
