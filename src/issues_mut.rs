@@ -22,7 +22,16 @@ pub enum Error {
     GitDB(#[from] crate::gitdb::Error),
 }
 
+/// Public API of Issues.
 impl IssuesMut {
+    /// Read Issues from a git ref (typically the `entomologist-data`
+    /// branch). The resulting Issues struct provides a mutable, read-write
+    /// view of the issues recorded in the git ref. The IssuesMut includes
+    /// a git worktree with a checkout of the specified git ref, which
+    /// enables adding/modifying/removing Issue objects and committing
+    /// to the git ref.
+    ///
+    /// For an immutable read-only view use Issues instead.
     pub fn new_from_git(git_ref: &str) -> Result<Self, Error> {
         let gitdb_mut = crate::gitdb::GitDbMut::get(git_ref)?;
         let issues = crate::Issues::new_from_dir(&gitdb_mut.path())?;
@@ -31,19 +40,25 @@ impl IssuesMut {
         Ok(Self { gitdb_mut, issues })
     }
 
+    /// Get the path of the git worktree used as the backing store.
     pub fn path(&self) -> std::path::PathBuf {
         self.gitdb_mut.path()
     }
 
-    pub fn add_issue(&mut self, issue: crate::issue::Issue) {
-        self.issues.add_issue(issue);
-    }
+    // /// Add an Issue to this IssuesMut.
+    // ///
+    // /// Commits.
+    // pub fn add_issue(&mut self, issue: crate::Issue) {
+    //     self.issues.add_issue(issue);
+    // }
 
-    pub fn get_issue(&self, issue_id: &str) -> Option<&crate::issue::Issue> {
+    /// Look up an Issue by its id.
+    pub fn get_issue(&self, issue_id: &str) -> Option<&crate::Issue> {
         self.issues.get_issue(issue_id)
     }
 
-    pub fn get_issue_mut(&mut self, issue_id: &str) -> Option<&mut crate::issue::Issue> {
+    /// Look up an Issue by its id (mutable).
+    pub fn get_issue_mut(&mut self, issue_id: &str) -> Option<&mut crate::Issue> {
         self.issues.get_issue_mut(issue_id)
     }
 

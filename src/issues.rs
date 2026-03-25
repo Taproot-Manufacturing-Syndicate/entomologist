@@ -10,7 +10,7 @@ pub struct Config {}
 /// GitDb branch, and is dropped as soon as the Issues are deserialized.
 #[derive(Debug, Default, PartialEq)]
 pub struct Issues {
-    issues: std::collections::HashMap<String, crate::issue::Issue>,
+    issues: std::collections::HashMap<String, crate::Issue>,
     config: Config,
 }
 
@@ -32,19 +32,47 @@ pub enum Error {
     GitDB(#[from] crate::gitdb::Error),
 }
 
+/// Public API of Issues.
 impl Issues {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn new_from_dir(dir: &std::path::Path) -> Result<Issues, Error> {
+    /// Read Issues from a git ref (typically the `entomologist-data`
+    /// branch). The resulting Issues struct provides a static, read-only
+    /// view of the issues recorded in the git ref.
+    ///
+    /// For a mutable view use IssuesMut instead.
+    pub fn new_from_git(git_ref: &str) -> Result<Self, Error> {
+        let gitdb = crate::gitdb::GitDb::get(git_ref)?;
+        let issues = Self::new_from_dir(&gitdb.path())?;
+        // Drop the GitDb, this destroys the underlying worktree.
+        Ok(issues)
+    }
+
+    /// Look up an Issue by its id.
+    pub fn get_issue(&self, issue_id: &str) -> Option<&crate::Issue> {
+        self.issues.get(issue_id)
+    }
+
+    /// Iterate over the Issue objects in an Issues.
+    pub fn iter(&self) -> std::collections::hash_map::Iter<'_, String, crate::Issue> {
+        self.issues.iter()
+    }
+}
+
+/// pub(crate) API of Issues.
+/// Only visible within the entomologist library crate.
+impl Issues {
+    /// Read Issues from a directory in the local filesystem.
+    pub(crate) fn new_from_dir(dir: &std::path::Path) -> Result<Issues, Error> {
         // Read Issues from DB.
-        let mut issues = std::collections::HashMap::<String, crate::issue::Issue>::new();
+        let mut issues = std::collections::HashMap::<String, crate::Issue>::new();
         let mut config = Config::default();
 
         for direntry in dir.read_dir()?.flatten() {
             if direntry.metadata()?.is_dir() {
-                let issue = crate::issue::Issue::new_from_dir(direntry.path().as_path())?;
+                let issue = crate::Issue::new_from_dir(direntry.path().as_path())?;
                 issues.insert(issue.id.clone(), issue);
             } else if direntry.file_name() == "config.toml" {
                 config = Issues::parse_config(direntry.path().as_path())?;
@@ -60,37 +88,29 @@ impl Issues {
         Ok(Self { issues, config })
     }
 
-    pub fn new_from_git(git_ref: &str) -> Result<Self, Error> {
-        let gitdb = crate::gitdb::GitDb::get(git_ref)?;
-        let issues = Self::new_from_dir(&gitdb.path())?;
-        // Drop the GitDb, this destroys the underlying worktree.
-        Ok(issues)
+    /// Insert an Issue.
+    ///
+    /// Note: this is currently only used for testing.
+    #[allow(dead_code)]
+    pub(crate) fn add_issue(&mut self, issue: crate::Issue) {
+        self.issues.insert(issue.id.clone(), issue);
     }
 
-    pub fn get_issue(&self, issue_id: &str) -> Option<&crate::issue::Issue> {
-        self.issues.get(issue_id)
-    }
-
-    /// Only public within the entomologist library crate.
-    pub(crate) fn get_issue_mut(&mut self, issue_id: &str) -> Option<&mut crate::issue::Issue> {
+    /// Get a mutable ref to an Issue.
+    pub(crate) fn get_issue_mut(&mut self, issue_id: &str) -> Option<&mut crate::Issue> {
         self.issues.get_mut(issue_id)
     }
 
-    pub fn iter(&self) -> std::collections::hash_map::Iter<'_, String, crate::Issue> {
-        self.issues.iter()
-    }
-
-    /// Only public within the entomologist library crate.
+    /// Get a mutable iterator over all Issue objects.
     pub(crate) fn iter_mut(
         &mut self,
     ) -> std::collections::hash_map::IterMut<'_, String, crate::Issue> {
         self.issues.iter_mut()
     }
+}
 
-    pub fn add_issue(&mut self, issue: crate::Issue) {
-        self.issues.insert(issue.id.clone(), issue);
-    }
-
+/// Private/internal API of Issues.
+impl Issues {
     fn parse_config(config_path: &std::path::Path) -> Result<Config, Error> {
         let config_contents = std::fs::read_to_string(config_path)?;
         let config: Config = toml::from_str(&config_contents)?;
@@ -111,7 +131,7 @@ mod tests {
 
         let uuid = String::from("7792b063eef6d33e7da5dc1856750c14");
         let dir = std::path::PathBuf::from(&uuid);
-        expected.add_issue(crate::issue::Issue {
+        expected.add_issue(crate::Issue {
             id: uuid,
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
             creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:37:07-06:00")
@@ -130,7 +150,7 @@ mod tests {
         let uuid = String::from("3943fc5c173fdf41c0a22251593cd476");
         let dir = std::path::PathBuf::from(&uuid);
         expected.add_issue(
-            crate::issue::Issue {
+            crate::Issue {
                 id: uuid,
                 author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
                 creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:36:25-06:00")
@@ -166,7 +186,7 @@ mod tests {
 
         let uuid = String::from("3fa5bfd93317ad25772680071d5ac325");
         let dir = std::path::PathBuf::from(&uuid);
-        expected.add_issue(crate::issue::Issue {
+        expected.add_issue(crate::Issue {
             id: uuid,
             author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
             creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:37:46-06:00")
@@ -203,7 +223,7 @@ mod tests {
             }
         );
         expected.add_issue(
-            crate::issue::Issue {
+            crate::Issue {
                 id: uuid,
                 author: String::from("Sebastian Kuzminsky <seb@highlab.com>"),
                 creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T10:08:24-06:00")
@@ -230,7 +250,7 @@ mod tests {
 
         let uuid = String::from("3fa5bfd93317ad25772680071d5ac325");
         let dir = std::path::PathBuf::from(&uuid);
-        expected.add_issue(crate::issue::Issue {
+        expected.add_issue(crate::Issue {
             id: uuid,
             author: String::from("sigil-03 <sigil@glyphs.tech>"),
             creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:38:40-06:00")
@@ -249,7 +269,7 @@ mod tests {
         let uuid = String::from("dd79c8cfb8beeacd0460429944b4ecbe");
         let dir = std::path::PathBuf::from(&uuid);
         expected.add_issue(
-            crate::issue::Issue {
+            crate::Issue {
                 id: uuid,
                 author: "A Person <foo@example.org>".to_owned(),
                 creation_time: chrono::DateTime::parse_from_rfc3339("2025-04-01T12:34:56-06:00")
@@ -269,7 +289,7 @@ mod tests {
         let uuid = String::from("a85f81fc5f14cb5d4851dd445dc9744c");
         let dir = std::path::PathBuf::from(&uuid);
         expected.add_issue(
-            crate::issue::Issue {
+            crate::Issue {
                 id: uuid,
                 author: String::from("sigil-03 <sigil@glyphs.tech>"),
                 creation_time: chrono::DateTime::parse_from_rfc3339("2025-07-24T08:39:02-06:00")
