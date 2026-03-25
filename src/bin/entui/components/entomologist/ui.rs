@@ -84,7 +84,6 @@ impl Widget for &IssuesList {
     {
         let issues_list: Vec<Entry> = self
             .issues
-            .issues
             .iter()
             .map(|(id, issue)| Entry::new_from_id_issue(id, issue))
             .collect();
@@ -97,7 +96,6 @@ impl Widget for &IssuesList {
         let issue_list_area = layout[0];
 
         let issues_list_widget = self
-            .issues
             .issues
             .iter()
             .map(|(id, issue)| generate_list_item(id, issue))

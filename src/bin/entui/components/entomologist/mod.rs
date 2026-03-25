@@ -4,7 +4,7 @@ use core::cell::RefCell;
 use entomologist::{
     comment::Comment,
     issue::{Issue, IssueHandle, State},
-    issues::Issues,
+    Issues, IssuesMut,
 };
 use ratatui::widgets::ListState;
 use thiserror::Error;
@@ -12,9 +12,9 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
-    EntIssuesError(#[from] entomologist::issues::ReadIssuesError),
+    EntIssuesError(#[from] entomologist::issues::Error),
     #[error(transparent)]
-    EntDbError(#[from] entomologist::database::Error),
+    EntMutIssuesError(#[from] entomologist::issues_mut::Error),
     #[error("invalid issue")]
     InvalidIssue,
 }
@@ -41,17 +41,11 @@ impl Entry {
         }
     }
     pub fn write_issue_to_db(&self) -> Result<(), Error> {
-        let issues_db_source =
-            entomologist::database::IssuesDatabaseSource::Branch("entomologist-data");
-        let issues_database = entomologist::database::make_issues_database(
-            &issues_db_source,
-            entomologist::database::IssuesDatabaseAccess::ReadWrite,
-        )?;
-
-        let mut issues = entomologist::issues::Issues::new_from_dir(&issues_database.dir)?;
+        let git_ref = "entomologist-data";
+        let mut issues = entomologist::IssuesMut::new_from_git(git_ref)?;
 
         // TODO: for now only update state
-        if let Some(issue) = issues.issues.get_mut(&self.id) {
+        if let Some(issue) = issues.get_issue_mut(&self.id) {
             issue.set_state(self.state.clone());
         }
         Ok(())
@@ -95,9 +89,9 @@ pub struct IssuesList {
 
 impl IssuesList {
     pub fn new() -> Result<Self, Error> {
-        let issues_db_source =
-            entomologist::database::IssuesDatabaseSource::Branch("entomologist-data");
-        let issues = entomologist::database::read_issues_database(&issues_db_source)?;
+        let git_ref = "entomologist-data";
+        let issues = entomologist::Issues::new_from_git(git_ref)?;
+
         Ok(Self {
             issues,
             list_state: RefCell::new(ListState::default()),
@@ -149,9 +143,8 @@ pub struct CommentsList {
 
 impl CommentsList {
     pub fn new(entry: Entry) -> Result<Self, Error> {
-        let issues_database_source =
-            entomologist::database::IssuesDatabaseSource::Branch("entomologist-data");
-        let issues = entomologist::database::read_issues_database(&issues_database_source)?;
+        let git_ref = "entomologist-data";
+        let issues = entomologist::Issues::new_from_git(git_ref)?;
 
         if let Some(issue) = issues.get_issue(&entry.id) {
             let comments = issue.get_comments();
