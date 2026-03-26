@@ -36,6 +36,7 @@ pub enum Event {
 pub enum AppEvent {
     /// Quit the application.
     Quit,
+    Sync,
     NewIssue,
     AddComment,
 }

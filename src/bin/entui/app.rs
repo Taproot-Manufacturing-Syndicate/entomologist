@@ -199,6 +199,19 @@ pub struct App {
 }
 
 impl App {
+    pub fn start_tui(&mut self, terminal: &mut DefaultTerminal) -> color_eyre::Result<()> {
+        enable_raw_mode()?;
+        crossterm::execute!(stdout(), EnterAlternateScreen, cursor::Hide)?;
+        terminal.clear()?;
+        self.events.start();
+        Ok(())
+    }
+    pub fn stop_tui(&mut self, terminal: &mut DefaultTerminal) -> color_eyre::Result<()> {
+        self.events.stop();
+        crossterm::execute!(stdout(), LeaveAlternateScreen, cursor::Hide)?;
+        disable_raw_mode()?;
+        Ok(())
+    }
     /// Constructs a new instance of [`App`].
     pub fn new() -> Result<Self, Error> {
         Ok(Self {
@@ -212,8 +225,7 @@ impl App {
 
     /// Run the application's main loop.
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> color_eyre::Result<()> {
-        crossterm::execute!(stdout(), EnterAlternateScreen, cursor::Hide)?;
-        self.events.start();
+        self.start_tui(&mut terminal)?;
         while self.running {
             terminal.draw(|frame| frame.render_widget(&self, frame.area()))?;
             match self.events.next().await? {
@@ -224,31 +236,20 @@ impl App {
                 },
                 Event::App(app_event) => match app_event {
                     AppEvent::Quit => self.quit(),
+                    AppEvent::Sync => {
+                        self.ent_manager.sync();
+                    }
                     AppEvent::NewIssue => {
-                        // TODO: this is super broken, it causes a bunch of UX glitches because of
-                        // keyboard capture, etc.
-                        self.events.stop();
-                        crossterm::execute!(stdout(), LeaveAlternateScreen, cursor::Hide)?;
-                        disable_raw_mode()?;
-                        self.ent_manager.create_issue();                
-                        enable_raw_mode()?;
-                        crossterm::execute!(stdout(), EnterAlternateScreen, cursor::Hide)?;
-                        self.events.start();
-                        terminal.clear()?;
+                        self.stop_tui(&mut terminal)?;
+                        self.ent_manager.create_issue()?;                
+                        self.start_tui(&mut terminal)?;
                     }
                     AppEvent::AddComment => {
-                        // TODO: this is super broken, it causes a bunch of UX glitches because of
-                        // keyboard capture, etc.
-                        self.events.stop();
-                        crossterm::execute!(stdout(), LeaveAlternateScreen, cursor::Hide)?;
-                        disable_raw_mode()?;
+                        self.stop_tui(&mut terminal)?;
                         if let Some(issue) = self.view_manager.get_selected_issue() {
-                            self.ent_manager.add_comment(&issue.id);                
+                            self.ent_manager.add_comment(&issue.id)?;                
                         }
-                        enable_raw_mode()?;
-                        crossterm::execute!(stdout(), EnterAlternateScreen, cursor::Hide)?;
-                        self.events.start();
-                        terminal.clear()?;
+                        self.start_tui(&mut terminal)?;
                     }
                 },
             }
@@ -283,7 +284,6 @@ impl App {
             }
             KeyCode::Char('s') => {
                 if key_event.modifiers == KeyModifiers::CONTROL {
-                    self.ent_manager.sync();
                 } else {
                     self.view_manager.issue_state_popup_toggle();
                 }
