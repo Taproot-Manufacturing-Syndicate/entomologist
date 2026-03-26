@@ -19,6 +19,8 @@ pub enum Error {
     InvalidIssue,
     #[error(transparent)]
     GitError(#[from] entomologist::git::GitError),
+    #[error(transparent)]
+    EntIssueError(#[from] entomologist::issue::IssueError),
 }
 
 #[derive(Debug, Clone)]
@@ -186,6 +188,12 @@ impl EntManager {
     pub fn sync(&self) -> Result<(), Error> {
         let issues = entomologist::IssuesMut::new_from_git(&self.git_ref)?;
         entomologist::git::sync(&issues.path(), &self.remote, &self.git_ref)?;
+        Ok(())
+    }
+
+    pub fn create_issue(&self) -> Result<(), Error> {
+        let issues = entomologist::IssuesMut::new_from_git(&self.git_ref)?;
+        entomologist::issue::Issue::new(&issues.path(), &None)?;
         Ok(())
     }
 }

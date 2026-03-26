@@ -233,8 +233,9 @@ impl App {
                 self.view_manager.escape();
             }
             KeyCode::Char('n') => {
-                // open the editor to create a new issue description
-                todo!("create new issue")
+                // TODO: this is super broken, it causes a bunch of UX glitches because of
+                // keyboard capture, etc.
+                self.ent_manager.create_issue();                
             }
             KeyCode::Char('c') => {
                 todo!("comment on the selected issue")
