@@ -288,6 +288,12 @@ impl App {
                     self.view_manager.issue_state_popup_toggle();
                 }
             }
+            KeyCode::Char('t') => {
+                todo!("add tags to issue");
+            }
+            KeyCode::Char('a') => {
+                todo!("add assignee to issue");
+            }
             // Other handlers you could add here.
             _ => {}
         }
