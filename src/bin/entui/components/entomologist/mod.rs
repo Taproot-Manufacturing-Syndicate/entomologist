@@ -83,9 +83,56 @@ impl StateSelectorWidget {
     }
 }
 
+// These are the entries in the ratatui::widgets::List in the main "Issue List" view.
+// We skip over Headings when selecting an Issue.
+// FIXME: Use references, don't be so lazy and clone the Issue everywhere :-/
+#[derive(Debug, PartialEq)]
+enum IssueListItem {
+    Heading(entomologist::issue::State),
+    Issue(entomologist::Issue),
+}
+
+impl From<&entomologist::Issue> for IssueListItem {
+    fn from(issue: &entomologist::Issue) -> Self {
+        Self::Issue(issue.clone())
+    }
+}
+
+impl From<entomologist::issue::State> for IssueListItem {
+    fn from(state: entomologist::issue::State) -> Self {
+        Self::Heading(state)
+    }
+}
+
+impl From<&IssueListItem> for ratatui::widgets::ListItem<'_> {
+    fn from(value: &IssueListItem) -> Self {
+        match value {
+            IssueListItem::Heading(state) => {
+                let s = format!("\n--- {state} ---\n\n").to_uppercase();
+                ratatui::widgets::ListItem::new(
+                    ratatui::text::Text::from(s).style(ratatui::style::Style::default().bold()),
+                )
+            }
+            IssueListItem::Issue(issue) => {
+                let title = issue.title();
+                let comments = match issue.comments.len() {
+                    0 => String::from("    "),
+                    n => format!("🗨️ {n}"),
+                };
+                ratatui::widgets::ListItem::new(format!("{comments}  {title}"))
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct IssuesList {
     issues: Issues,
+
+    // This is the contents of the List in the main "Issue List" view. It
+    // contains Heading (showing State) and Issue (showing an Issue).
+    list_items: Vec<IssueListItem>,
+
     // safety: this is only accessed from the UI thread
     list_state: RefCell<ListState>,
     selected_issue: RefCell<Option<Entry>>,
@@ -96,19 +143,78 @@ impl IssuesList {
         let git_ref = "entomologist-data";
         let issues = entomologist::Issues::new_from_git(git_ref)?;
 
+        // Vec of Issue, with only InProgress, Backlog, and New Issues
+        // included, sorted by creation_time.
+        let mut issue_list: Vec<Issue> = issues
+            .iter()
+            .map(|(_id, issue)| issue.clone())
+            .filter(|issue| {
+                issue.state == State::InProgress
+                    || issue.state == State::Backlog
+                    || issue.state == State::New
+            })
+            .collect();
+        issue_list.sort_by(|issue_a, issue_b| issue_b.creation_time.cmp(&issue_a.creation_time));
+        issue_list.sort_by(|issue_a, issue_b| issue_b.state.cmp(&issue_a.state));
+
+        // Vec of IssueListItem (each item is Heading or Issue), with
+        // only the selected Issues from above included.
+        let mut list_items = Vec::<IssueListItem>::new();
+        let mut prev_state: Option<entomologist::issue::State> = None;
+        for issue in issue_list.iter() {
+            match prev_state {
+                None => {
+                    list_items.push(IssueListItem::from(issue.state));
+                }
+                Some(state) => {
+                    if issue.state != state {
+                        list_items.push(IssueListItem::from(issue.state));
+                    }
+                }
+            }
+            prev_state = Some(issue.state);
+            list_items.push(IssueListItem::from(issue));
+        }
+
         Ok(Self {
             issues,
+            list_items,
             list_state: RefCell::new(ListState::default()),
             selected_issue: RefCell::new(None),
         })
     }
 
+    // Select the previous Issue item in the List, skipping over Heading items.
     pub fn select_previous(&self) {
-        self.list_state.borrow_mut().select_previous();
+        let mut s = self.list_state.borrow_mut();
+        let old_index = match s.selected() {
+            Some(old_index) => old_index,
+            None => self.list_items.len(),
+        };
+        for index in (0..old_index).rev() {
+            if let IssueListItem::Issue(_) = &self.list_items[index] {
+                s.select(Some(index));
+                if index == 1 {
+                    *s.offset_mut() = 0;
+                }
+                return;
+            }
+        }
     }
 
+    // Select the next Issue item in the List, skipping over Heading items.
     pub fn select_next(&self) {
-        self.list_state.borrow_mut().select_next();
+        let mut s = self.list_state.borrow_mut();
+        let old_index = match s.selected() {
+            Some(old_index) => old_index,
+            None => 0,
+        };
+        for index in (old_index + 1)..self.list_items.len() {
+            if let IssueListItem::Issue(_) = &self.list_items[index] {
+                s.select(Some(index));
+                return;
+            }
+        }
     }
 
     pub fn get_selected(&self) -> Option<Entry> {

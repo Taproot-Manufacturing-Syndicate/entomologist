@@ -18,16 +18,6 @@ use crate::components::entomologist::{
     CommentEntry, CommentsList, Entry, IssuesList, StateSelectorWidget,
 };
 
-fn generate_list_item<'a>(_id: &String, issue: &Issue) -> ListItem<'a> {
-    let title = issue.title();
-    let comments = match issue.comments.len() {
-        0 => String::from("    "),
-        n => format!("🗨️ {n}"),
-    };
-
-    ListItem::new(format!("{comments}  {title}"))
-}
-
 // have to do this since neither Widget nor Issue were defined in this crate
 impl Widget for &Entry {
     fn render(self, area: Rect, buf: &mut Buffer)
@@ -82,16 +72,6 @@ impl Widget for &IssuesList {
     where
         Self: Sized,
     {
-        // Vec of entomologist::Issue, sorted by creation_time.
-        let mut issue_list: Vec<&Issue> = self.issues.iter().map(|(_id, issue)| issue).collect();
-        issue_list.sort_by(|issue_a, issue_b| issue_b.creation_time.cmp(&issue_a.creation_time));
-
-        // Vec of Event, same order as `issue_list`.
-        let event_list: Vec<Entry> = issue_list
-            .iter()
-            .map(|issue| Entry::new_from_id_issue(&issue.id, issue))
-            .collect();
-
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![Constraint::Fill(1), Constraint::Length(20)])
@@ -100,9 +80,9 @@ impl Widget for &IssuesList {
         // ISSUE LIST
         let issue_list_area = layout[0];
 
-        let issues_list_widget = issue_list
+        let issues_list_widget = self
+            .list_items
             .iter()
-            .map(|issue| generate_list_item(&issue.id, issue))
             .collect::<List>()
             .block(Block::bordered().title("ISSUES"))
             .style(Style::new().white())
@@ -114,7 +94,12 @@ impl Widget for &IssuesList {
         StatefulWidget::render(issues_list_widget, issue_list_area, buf, state);
 
         match state.selected() {
-            Some(index) => self.selected_issue.replace(Some(event_list[index].clone())),
+            Some(index) => match &self.list_items[index] {
+                super::IssueListItem::Heading(_) => self.selected_issue.replace(None),
+                super::IssueListItem::Issue(issue) => self
+                    .selected_issue
+                    .replace(Some(Entry::new_from_id_issue(&issue.id, issue))),
+            },
             None => self.selected_issue.replace(None),
         };
 

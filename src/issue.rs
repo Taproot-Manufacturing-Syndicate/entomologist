@@ -7,7 +7,19 @@ use log::debug;
 
 use strum_macros::{EnumIter, IntoStaticStr};
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, serde::Deserialize, EnumIter, IntoStaticStr)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    serde::Deserialize,
+    EnumIter,
+    IntoStaticStr,
+)]
 /// These are the states an issue can be in.
 pub enum State {
     New,
@@ -20,7 +32,7 @@ pub enum State {
 
 pub type IssueHandle = String;
 
-#[derive(Debug, ignorable::PartialEq)]
+#[derive(Clone, Debug, ignorable::PartialEq)]
 pub struct Issue {
     pub id: String,
     pub author: String,
