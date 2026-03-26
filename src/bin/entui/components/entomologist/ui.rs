@@ -82,11 +82,16 @@ impl Widget for &IssuesList {
     where
         Self: Sized,
     {
-        let issues_list: Vec<Entry> = self
-            .issues
+        // Vec of entomologist::Issue, sorted by creation_time.
+        let mut issue_list: Vec<&Issue> = self.issues.iter().map(|(_id, issue)| issue).collect();
+        issue_list.sort_by(|issue_a, issue_b| issue_b.creation_time.cmp(&issue_a.creation_time));
+
+        // Vec of Event, same order as `issue_list`.
+        let event_list: Vec<Entry> = issue_list
             .iter()
-            .map(|(id, issue)| Entry::new_from_id_issue(id, issue))
+            .map(|issue| Entry::new_from_id_issue(&issue.id, issue))
             .collect();
+
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![Constraint::Fill(1), Constraint::Length(20)])
@@ -95,10 +100,9 @@ impl Widget for &IssuesList {
         // ISSUE LIST
         let issue_list_area = layout[0];
 
-        let issues_list_widget = self
-            .issues
+        let issues_list_widget = issue_list
             .iter()
-            .map(|(id, issue)| generate_list_item(id, issue))
+            .map(|issue| generate_list_item(&issue.id, issue))
             .collect::<List>()
             .block(Block::bordered().title("ISSUES"))
             .style(Style::new().white())
@@ -110,9 +114,7 @@ impl Widget for &IssuesList {
         StatefulWidget::render(issues_list_widget, issue_list_area, buf, state);
 
         match state.selected() {
-            Some(index) => self
-                .selected_issue
-                .replace(Some(issues_list[index].clone())),
+            Some(index) => self.selected_issue.replace(Some(event_list[index].clone())),
             None => self.selected_issue.replace(None),
         };
 
