@@ -1,10 +1,11 @@
 use color_eyre::eyre::OptionExt;
+use color_eyre::eyre::eyre;
 use crossterm::event::EventStream;
 use futures::{FutureExt, StreamExt};
 // use ratatui::crossterm;
 use crossterm::event::Event as CrosstermEvent;
 use std::time::Duration;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc};
 
 /// The frequency at which tick events are emitted.
 const TICK_FPS: f64 = 30.0;
@@ -35,6 +36,42 @@ pub enum Event {
 pub enum AppEvent {
     /// Quit the application.
     Quit,
+    NewIssue,
+}
+
+#[derive(Debug)]
+pub struct EventManager {
+    handler: Option<EventHandler>
+}
+
+impl EventManager {
+    pub fn new() -> Self {
+        Self {
+            handler: None,
+        }
+    }
+
+    pub fn start(&mut self) {
+        self.handler = Some(EventHandler::new());
+    }
+
+    pub fn stop(&mut self) {
+        self.handler = None;
+    }
+
+    pub async fn next(&mut self) -> color_eyre::Result<Event> {
+        if let Some(handler) = &mut self.handler {
+            handler.next().await
+        } else {
+            Err(eyre!("event handler is stopped"))
+        }
+    }
+
+    pub fn send(&mut self, event: AppEvent) {
+        if let Some(handler) = &mut self.handler {
+            let _ = handler.send(event);
+        }
+    }
 }
 
 /// Terminal event handler.

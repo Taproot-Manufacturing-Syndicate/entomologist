@@ -1,9 +1,12 @@
 use crate::components::entomologist::{EntManager, CommentsList, Entry, IssuesList, StateSelectorWidget};
-use crate::event::{AppEvent, Event, EventHandler};
+use crate::event::{AppEvent, Event, EventHandler, EventManager};
 use ratatui::DefaultTerminal;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::{cursor, terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}, event::{KeyCode, KeyEvent, KeyModifiers}};
 use thiserror::Error;
+
+use std::io::{Stdout, stdout};
+
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -174,7 +177,7 @@ pub struct App {
     /// Is the application running?
     pub running: bool,
     /// Event handler.
-    pub events: EventHandler,
+    pub events: EventManager,
 
     pub view_manager: ViewManager,
 
@@ -188,7 +191,7 @@ impl App {
     pub fn new() -> Result<Self, Error> {
         Ok(Self {
             running: true,
-            events: EventHandler::new(),
+            events: EventManager::new(),
             // TODO: .unwrap() as laziness
             view_manager: ViewManager::default(),
             ent_manager: EntManager::new("origin", "entomologist-data"),
@@ -197,6 +200,8 @@ impl App {
 
     /// Run the application's main loop.
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> color_eyre::Result<()> {
+        crossterm::execute!(stdout(), EnterAlternateScreen, cursor::Hide)?;
+        self.events.start();
         while self.running {
             terminal.draw(|frame| frame.render_widget(&self, frame.area()))?;
             match self.events.next().await? {
@@ -207,6 +212,18 @@ impl App {
                 },
                 Event::App(app_event) => match app_event {
                     AppEvent::Quit => self.quit(),
+                    AppEvent::NewIssue => {
+                        // TODO: this is super broken, it causes a bunch of UX glitches because of
+                        // keyboard capture, etc.
+                        self.events.stop();
+                        crossterm::execute!(stdout(), LeaveAlternateScreen, cursor::Hide)?;
+                        disable_raw_mode()?;
+                        self.ent_manager.create_issue();                
+                        enable_raw_mode()?;
+                        crossterm::execute!(stdout(), EnterAlternateScreen, cursor::Hide)?;
+                        self.events.start();
+                        terminal.clear()?;
+                    }
                 },
             }
         }
@@ -233,9 +250,7 @@ impl App {
                 self.view_manager.escape();
             }
             KeyCode::Char('n') => {
-                // TODO: this is super broken, it causes a bunch of UX glitches because of
-                // keyboard capture, etc.
-                self.ent_manager.create_issue();                
+                self.events.send(AppEvent::NewIssue);
             }
             KeyCode::Char('c') => {
                 todo!("comment on the selected issue")
