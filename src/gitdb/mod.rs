@@ -6,6 +6,8 @@
 
 pub mod worktree;
 
+use std::io::Write;
+
 /// GitDb checks out a git ref in detached head mode, so any changes
 /// made to the worktree can **not** be committed back to the ref. This
 /// makes the GitDb effectively immutable, in the sense that there's no
@@ -73,6 +75,88 @@ impl GitDbMut {
     }
 }
 
+fn create_orphan_branch(branch: &str) -> Result<(), Error> {
+    {
+        let tmp_worktree = tempfile::tempdir().unwrap();
+        create_orphan_branch_at_path(branch, tmp_worktree.path())?;
+    }
+    // The temp dir is now removed / cleaned up.
+
+    let result = std::process::Command::new("git")
+        .args(["worktree", "prune"])
+        .output()?;
+    if !result.status.success() {
+        return Err(Error::Git {
+            stdout: String::from_utf8_lossy(&result.stdout).into(),
+            stderr: String::from_utf8_lossy(&result.stderr).into(),
+        });
+    }
+
+    Ok(())
+}
+
+fn create_orphan_branch_at_path(
+    branch: &str,
+    worktree_path: &std::path::Path,
+) -> Result<(), Error> {
+    let worktree_dir = worktree_path.to_string_lossy();
+
+    // Create a worktree at the path, with a detached head.
+    let result = std::process::Command::new("git")
+        .args(["worktree", "add", &worktree_dir, "HEAD"])
+        .output()?;
+    if !result.status.success() {
+        return Err(Error::Git {
+            stdout: String::from_utf8_lossy(&result.stdout).into(),
+            stderr: String::from_utf8_lossy(&result.stderr).into(),
+        });
+    }
+
+    // Create an empty orphan branch in the worktree.
+    let result = std::process::Command::new("git")
+        .args(["switch", "--orphan", branch])
+        .current_dir(worktree_path)
+        .output()?;
+    if !result.status.success() {
+        return Err(Error::Git {
+            stdout: String::from_utf8_lossy(&result.stdout).into(),
+            stderr: String::from_utf8_lossy(&result.stderr).into(),
+        });
+    }
+
+    let mut readme_filename = std::path::PathBuf::from(worktree_path);
+    readme_filename.push("README.md");
+    let mut readme = std::fs::File::create(readme_filename)?;
+    write!(
+        readme,
+        "This branch is used by entomologist to track issues."
+    )?;
+
+    let result = std::process::Command::new("git")
+        .args(["add", "README.md"])
+        .current_dir(worktree_path)
+        .output()?;
+    if !result.status.success() {
+        return Err(Error::Git {
+            stdout: String::from_utf8_lossy(&result.stdout).into(),
+            stderr: String::from_utf8_lossy(&result.stderr).into(),
+        });
+    }
+
+    let result = std::process::Command::new("git")
+        .args(["commit", "-m", "create entomologist issue branch"])
+        .current_dir(worktree_path)
+        .output()?;
+    if !result.status.success() {
+        return Err(Error::Git {
+            stdout: String::from_utf8_lossy(&result.stdout).into(),
+            stderr: String::from_utf8_lossy(&result.stderr).into(),
+        });
+    }
+
+    Ok(())
+}
+
 fn ensure_branch_exists(branch: &str) -> Result<(), Error> {
     // Check for a local branch with the specified name.
     if crate::git::git_branch_exists(&format!("refs/heads/{branch}"))? {
@@ -109,9 +193,38 @@ fn ensure_branch_exists(branch: &str) -> Result<(), Error> {
         }
         false => {
             // No remote has this branch, make an empty one locally now.
-            crate::git::create_orphan_branch(branch)?;
+            create_orphan_branch(branch)?;
         }
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    fn git_remove_branch(branch: &str) -> Result<(), Error> {
+        let result = std::process::Command::new("git")
+            .args(["branch", "-D", branch])
+            .output()?;
+        if !result.status.success() {
+            return Err(Error::Git {
+                stdout: String::from_utf8_lossy(&result.stdout).into(),
+                stderr: String::from_utf8_lossy(&result.stderr).into(),
+            });
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_create_orphan_branch() {
+        let rnd: u128 = rand::random();
+        let mut branch = std::string::String::from("entomologist-test-branch-");
+        branch.push_str(&format!("{:032x}", rnd));
+        create_orphan_branch(&branch).unwrap();
+        assert_eq!(crate::git::git_branch_exists(&branch).unwrap(), true);
+        git_remove_branch(&branch).unwrap();
+    }
 }

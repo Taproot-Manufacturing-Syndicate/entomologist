@@ -1,5 +1,3 @@
-use std::io::Write;
-
 #[derive(Debug, thiserror::Error)]
 pub enum GitError {
     #[error(transparent)]
@@ -105,18 +103,6 @@ pub fn checkout_branch_in_worktree(
 pub fn git_worktree_prune() -> Result<(), GitError> {
     let result = std::process::Command::new("git")
         .args(["worktree", "prune"])
-        .output()?;
-    if !result.status.success() {
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
-    }
-    Ok(())
-}
-
-pub fn git_remove_branch(branch: &str) -> Result<(), GitError> {
-    let result = std::process::Command::new("git")
-        .args(["branch", "-D", branch])
         .output()?;
     if !result.status.success() {
         println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
@@ -443,83 +429,6 @@ pub fn git_log_oldest_author_timestamp(
     Ok((String::from(author_str), timestamp))
 }
 
-pub fn create_orphan_branch(branch: &str) -> Result<(), GitError> {
-    {
-        let tmp_worktree = tempfile::tempdir().unwrap();
-        create_orphan_branch_at_path(branch, tmp_worktree.path())?;
-    }
-    // The temp dir is now removed / cleaned up.
-
-    let result = std::process::Command::new("git")
-        .args(["worktree", "prune"])
-        .output()?;
-    if !result.status.success() {
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
-    }
-
-    Ok(())
-}
-
-fn create_orphan_branch_at_path(
-    branch: &str,
-    worktree_path: &std::path::Path,
-) -> Result<(), GitError> {
-    let worktree_dir = worktree_path.to_string_lossy();
-
-    // Create a worktree at the path, with a detached head.
-    let result = std::process::Command::new("git")
-        .args(["worktree", "add", &worktree_dir, "HEAD"])
-        .output()?;
-    if !result.status.success() {
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
-    }
-
-    // Create an empty orphan branch in the worktree.
-    let result = std::process::Command::new("git")
-        .args(["switch", "--orphan", branch])
-        .current_dir(worktree_path)
-        .output()?;
-    if !result.status.success() {
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
-    }
-
-    let mut readme_filename = std::path::PathBuf::from(worktree_path);
-    readme_filename.push("README.md");
-    let mut readme = std::fs::File::create(readme_filename)?;
-    write!(
-        readme,
-        "This branch is used by entomologist to track issues."
-    )?;
-
-    let result = std::process::Command::new("git")
-        .args(["add", "README.md"])
-        .current_dir(worktree_path)
-        .output()?;
-    if !result.status.success() {
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
-    }
-
-    let result = std::process::Command::new("git")
-        .args(["commit", "-m", "create entomologist issue branch"])
-        .current_dir(worktree_path)
-        .output()?;
-    if !result.status.success() {
-        println!("stdout: {}", &String::from_utf8_lossy(&result.stdout));
-        println!("stderr: {}", &String::from_utf8_lossy(&result.stderr));
-        return Err(GitError::Oops);
-    }
-
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -540,15 +449,6 @@ mod tests {
         }
         // The temporary worktree directory is removed when the Temp variable is dropped.
         assert!(!p.exists());
-    }
-
-    #[test]
-    fn test_create_orphan_branch() {
-        let rnd: u128 = rand::random();
-        let mut branch = std::string::String::from("entomologist-test-branch-");
-        branch.push_str(&format!("{:032x}", rnd));
-        create_orphan_branch(&branch).unwrap();
-        git_remove_branch(&branch).unwrap();
     }
 
     #[test]
