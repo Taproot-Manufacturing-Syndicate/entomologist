@@ -243,6 +243,16 @@ impl App {
                 self.view_manager.issue_state_popup_toggle();
                 // set the state of an issue
             }
+            KeyCode::Char('n') => {
+                // open the editor to create a new issue description
+                todo!("create new issue")
+            }
+            KeyCode::Char('c') => {
+                todo!("comment on the selected issue")
+            }
+            KeyCode::Char('p') => {
+                todo!("push/pull the issues db (sync)")
+            }
             // Other handlers you could add here.
             _ => {}
         }
