@@ -1,3 +1,7 @@
+//! Entomologist is a distributed, collaborative, offline-first issue tracker, backed by git.
+//!
+//! *Entomologist: A scientist who studies bugs.*
+
 use std::str::FromStr;
 
 pub mod gitdb;
