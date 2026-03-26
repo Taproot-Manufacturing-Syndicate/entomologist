@@ -37,6 +37,7 @@ pub enum AppEvent {
     /// Quit the application.
     Quit,
     NewIssue,
+    AddComment,
 }
 
 #[derive(Debug)]

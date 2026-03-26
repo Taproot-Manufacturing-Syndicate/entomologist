@@ -26,7 +26,7 @@ pub enum Error {
 #[derive(Debug, Clone)]
 pub struct Entry {
     title: String,
-    id: IssueHandle,
+    pub id: IssueHandle,
     pub state: State,
     assignee: Option<String>,
     tags: Vec<String>,
@@ -195,5 +195,15 @@ impl EntManager {
         let issues = entomologist::IssuesMut::new_from_git(&self.git_ref)?;
         entomologist::issue::Issue::new(&issues.path(), &None)?;
         Ok(())
+    }
+
+    pub fn add_comment(&self, issue_id: &IssueHandle) -> Result<(), Error> {
+        let mut issues = entomologist::IssuesMut::new_from_git(&self.git_ref)?;
+        if let Some(issue) = issues.get_issue_mut(&issue_id) {
+            issue.add_comment(&None)?;
+            Ok(())
+        } else {
+            Err(Error::InvalidIssue)
+        }
     }
 }

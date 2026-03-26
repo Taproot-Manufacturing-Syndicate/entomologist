@@ -169,6 +169,18 @@ impl ViewManager {
              None => self.popup_state = Some(PopupState::StateSelection{inner_widget: StateSelectorWidget::new()}),
          }
     }
+
+    pub fn get_selected_issue(&self) -> Option<Entry> {
+        match &self.view_state {
+                ViewState::Overview {issue_list} => {
+                    issue_list.get_selected()
+                }
+                ViewState::Issue{issue, ..} => {
+                    Some(issue.clone())
+                }
+            
+        }
+    }
 }
 
 /// Application.
@@ -224,6 +236,20 @@ impl App {
                         self.events.start();
                         terminal.clear()?;
                     }
+                    AppEvent::AddComment => {
+                        // TODO: this is super broken, it causes a bunch of UX glitches because of
+                        // keyboard capture, etc.
+                        self.events.stop();
+                        crossterm::execute!(stdout(), LeaveAlternateScreen, cursor::Hide)?;
+                        disable_raw_mode()?;
+                        if let Some(issue) = self.view_manager.get_selected_issue() {
+                            self.ent_manager.add_comment(&issue.id);                
+                        }
+                        enable_raw_mode()?;
+                        crossterm::execute!(stdout(), EnterAlternateScreen, cursor::Hide)?;
+                        self.events.start();
+                        terminal.clear()?;
+                    }
                 },
             }
         }
@@ -253,7 +279,7 @@ impl App {
                 self.events.send(AppEvent::NewIssue);
             }
             KeyCode::Char('c') => {
-                todo!("comment on the selected issue")
+                self.events.send(AppEvent::AddComment);
             }
             KeyCode::Char('s') => {
                 if key_event.modifiers == KeyModifiers::CONTROL {
