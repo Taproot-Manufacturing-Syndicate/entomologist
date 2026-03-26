@@ -1,4 +1,4 @@
-use crate::components::entomologist::{CommentsList, Entry, IssuesList, StateSelectorWidget};
+use crate::components::entomologist::{EntManager, CommentsList, Entry, IssuesList, StateSelectorWidget};
 use crate::event::{AppEvent, Event, EventHandler};
 use ratatui::DefaultTerminal;
 
@@ -178,17 +178,9 @@ pub struct App {
 
     pub view_manager: ViewManager,
 
-    // pub view_state: ViewState,
-}
+    pub ent_manager: EntManager,
 
-impl Default for App {
-    fn default() -> Self {
-        Self {
-            running: true,
-            events: EventHandler::new(),
-            view_manager: ViewManager::default(),
-        }
-    }
+    // pub view_state: ViewState,
 }
 
 impl App {
@@ -199,6 +191,7 @@ impl App {
             events: EventHandler::new(),
             // TODO: .unwrap() as laziness
             view_manager: ViewManager::default(),
+            ent_manager: EntManager::new("origin", "entomologist-data"),
         })
     }
 
@@ -239,10 +232,6 @@ impl App {
             KeyCode::Esc => {
                 self.view_manager.escape();
             }
-            KeyCode::Char('s') => {
-                self.view_manager.issue_state_popup_toggle();
-                // set the state of an issue
-            }
             KeyCode::Char('n') => {
                 // open the editor to create a new issue description
                 todo!("create new issue")
@@ -250,8 +239,12 @@ impl App {
             KeyCode::Char('c') => {
                 todo!("comment on the selected issue")
             }
-            KeyCode::Char('p') => {
-                todo!("push/pull the issues db (sync)")
+            KeyCode::Char('s') => {
+                if key_event.modifiers == KeyModifiers::CONTROL {
+                    self.ent_manager.sync();
+                } else {
+                    self.view_manager.issue_state_popup_toggle();
+                }
             }
             // Other handlers you could add here.
             _ => {}

@@ -17,6 +17,8 @@ pub enum Error {
     EntMutIssuesError(#[from] entomologist::issues_mut::Error),
     #[error("invalid issue")]
     InvalidIssue,
+    #[error(transparent)]
+    GitError(#[from] entomologist::git::GitError),
 }
 
 #[derive(Debug, Clone)]
@@ -164,5 +166,26 @@ impl CommentsList {
 
     pub fn scroll_up(&self) {
         self.list_state.borrow_mut().next();
+    }
+}
+
+#[derive(Debug)]
+pub struct EntManager {
+    remote: String,
+    git_ref: String,
+}
+
+impl EntManager {
+    pub fn new(remote: &str, git_ref: &str) -> Self {
+        Self {
+            remote: String::from(remote),
+            git_ref: String::from(git_ref),
+        }
+    }
+
+    pub fn sync(&self) -> Result<(), Error> {
+        let issues = entomologist::IssuesMut::new_from_git(&self.git_ref)?;
+        entomologist::git::sync(&issues.path(), &self.remote, &self.git_ref)?;
+        Ok(())
     }
 }
